@@ -1,9 +1,11 @@
 const els = {
   dataInput: document.getElementById("data-input"),
+  dataInput2: document.getElementById("data-input-2"),
   titleInput: document.getElementById("title-input"),
   xLabelInput: document.getElementById("xlabel-input"),
   yLabelInput: document.getElementById("ylabel-input"),
   colorInput: document.getElementById("color-input"),
+  colorInput2: document.getElementById("color-input-2"),
   bgColorInput: document.getElementById("bgcolor-input"),
   textColorInput: document.getElementById("textcolor-input"),
   gridColorInput: document.getElementById("gridcolor-input"),
@@ -21,11 +23,16 @@ const els = {
   heightInput: document.getElementById("height-input"),
   scaleInput: document.getElementById("scale-input"),
   previewSizeInput: document.getElementById("preview-size-input"),
+  compareInput: document.getElementById("compare-input"),
+  secondSpectrumGroup: document.getElementById("second-spectrum-group"),
   plotBtn: document.getElementById("plot-btn"),
   downloadBtn: document.getElementById("download-btn"),
   loadExampleBtn: document.getElementById("load-example"),
+  loadExampleBtn2: document.getElementById("load-example-2"),
   clearBtn: document.getElementById("clear-data"),
+  clearBtn2: document.getElementById("clear-data-2"),
   fileInput: document.getElementById("file-input"),
+  fileInput2: document.getElementById("file-input-2"),
   status: document.getElementById("status"),
   chart: document.getElementById("chart"),
 };
@@ -41,6 +48,12 @@ const TRANSLATIONS = {
     loadExample: "Carregar exemplo",
     clear: "Limpar",
     loadFile: "Carregar arquivo (.csv/.txt)",
+    dataLabel2: "Dados do segundo espectro (m/z, intensidade)",
+    loadExample2: "Carregar exemplo 2",
+    clear2: "Limpar 2",
+    loadFile2: "Carregar arquivo 2 (.csv/.txt)",
+    peakColor2: "Cor dos picos (2º)",
+    compareSpectra: "Adicionar segundo espectro abaixo",
     chartTitle: "Título do gráfico",
     chartTitleDefault: "Espectro de Massa",
     xLabel: "Rótulo X",
@@ -90,6 +103,12 @@ const TRANSLATIONS = {
     loadExample: "Load example",
     clear: "Clear",
     loadFile: "Load file (.csv/.txt)",
+    dataLabel2: "Second spectrum data (m/z, intensity)",
+    loadExample2: "Load example 2",
+    clear2: "Clear 2",
+    loadFile2: "Load file 2 (.csv/.txt)",
+    peakColor2: "Peak color (2nd)",
+    compareSpectra: "Add a second spectrum below",
     chartTitle: "Chart title",
     chartTitleDefault: "Mass Spectrum",
     xLabel: "X label",
@@ -148,6 +167,17 @@ const EXAMPLE = `50.1, 12
 120.2, 55
 121.2, 9`;
 
+const EXAMPLE_2 = `51.0, 9
+65.1, 28
+77.1, 52
+78.0, 12
+91.0, 74
+92.0, 30
+104.1, 18
+119.1, 100
+120.1, 42
+134.1, 25`;
+
 function setStatus(message, type = "") {
   els.status.textContent = message;
   els.status.className = `status ${type}`.trim();
@@ -188,7 +218,7 @@ function parseData(text) {
   return { mz, intensity, errors };
 }
 
-function buildStemTraces(mz, intensity, color) {
+function buildStemTraces(mz, intensity, color, xaxisRef = "x", yaxisRef = "y") {
   const xs = [];
   const ys = [];
   mz.forEach((m, idx) => {
@@ -201,6 +231,8 @@ function buildStemTraces(mz, intensity, color) {
     mode: "lines",
     x: xs,
     y: ys,
+    xaxis: xaxisRef,
+    yaxis: yaxisRef,
     line: { color, width: 1.5 },
     hoverinfo: "skip",
     showlegend: false,
@@ -211,6 +243,8 @@ function buildStemTraces(mz, intensity, color) {
     mode: "markers",
     x: mz,
     y: intensity,
+    xaxis: xaxisRef,
+    yaxis: yaxisRef,
     marker: { color, size: 6, symbol: "circle" },
     hovertemplate: `m/z: %{x}<br>${t().hoverIntensity}: %{y:.2f}<extra></extra>`,
     showlegend: false,
@@ -219,18 +253,27 @@ function buildStemTraces(mz, intensity, color) {
   return [stems, markers];
 }
 
-function buildAnnotations(mz, intensity, threshold, decimals, fontSize, fontFamily, textColor) {
+function buildAnnotations(mz, intensity, threshold, decimals, fontSize, fontFamily, textColor, xref = "x", yref = "y") {
   return mz
     .map((m, idx) => ({ m, i: intensity[idx] }))
     .filter((p) => p.i >= threshold)
     .map((p) => ({
       x: p.m,
       y: p.i,
+      xref,
+      yref,
       text: p.m.toFixed(decimals),
       showarrow: false,
       yshift: 10,
       font: { size: fontSize, color: textColor, family: fontFamily },
     }));
+}
+
+function normalizeIntensities(intensity, doNormalize) {
+  if (!doNormalize) return intensity.slice();
+  const max = Math.max(...intensity);
+  if (max <= 0) return intensity.slice();
+  return intensity.map((v) => (v / max) * 100);
 }
 
 function plot() {
@@ -241,26 +284,31 @@ function plot() {
     return;
   }
 
-  let intensity = parsed.intensity.slice();
+  const compareEnabled = els.compareInput.checked;
+  const parsed2 = compareEnabled ? parseData(els.dataInput2.value) : { mz: [], intensity: [], errors: [] };
+  const hasSecond = compareEnabled && parsed2.mz.length > 0;
+
   const normalize = els.normalizeInput.checked;
-  if (normalize) {
-    const max = Math.max(...intensity);
-    if (max > 0) intensity = intensity.map((v) => (v / max) * 100);
-  }
+  const intensity = normalizeIntensities(parsed.intensity, normalize);
+  const intensity2 = hasSecond ? normalizeIntensities(parsed2.intensity, normalize) : [];
 
   const color = els.colorInput.value;
+  const color2 = els.colorInput2.value;
   const bgColor = els.bgColorInput.value;
   const textColor = els.textColorInput.value;
   const gridColor = els.gridColorInput.value;
   const fontFamily = els.fontFamilyInput.value;
   const fontSize = parseInt(els.fontSizeInput.value, 10) || 14;
   const showGrid = els.gridInput.checked;
-  const traces = buildStemTraces(parsed.mz, intensity, color);
 
   const yMax = Math.max(...intensity);
   const yPadding = yMax * 0.12;
-  const dataXMin = Math.min(...parsed.mz);
-  const dataXMax = Math.max(...parsed.mz);
+  const yMax2 = hasSecond ? Math.max(...intensity2) : 0;
+  const yPadding2 = yMax2 * 0.12;
+
+  const allMz = hasSecond ? parsed.mz.concat(parsed2.mz) : parsed.mz;
+  const dataXMin = Math.min(...allMz);
+  const dataXMax = Math.max(...allMz);
   const xMinRaw = els.xMinInput.value.trim();
   const xMaxRaw = els.xMaxInput.value.trim();
   const xMinUser = xMinRaw === "" ? NaN : parseFloat(xMinRaw.replace(",", "."));
@@ -269,6 +317,32 @@ function plot() {
   const xMin = Number.isFinite(xMinUser) ? xMinUser : dataXMin - xPadding;
   const xMax = Number.isFinite(xMaxUser) ? xMaxUser : dataXMax + xPadding;
   const closeBox = els.boxInput.checked;
+  const xLabelText = els.xLabelInput.value || "m/z";
+  const yLabelText = els.yLabelInput.value || t().hoverIntensity;
+
+  const axisCommon = {
+    tickfont: { size: fontSize, family: fontFamily, color: textColor },
+    linecolor: textColor,
+    tickcolor: textColor,
+    gridcolor: gridColor,
+    showgrid: showGrid,
+    showline: true,
+  };
+
+  const xAxisBase = {
+    ...axisCommon,
+    range: [xMin, xMax],
+    zeroline: false,
+    mirror: closeBox ? "ticks" : false,
+  };
+
+  const yAxisBase = {
+    ...axisCommon,
+    rangemode: "nonnegative",
+    zeroline: true,
+    zerolinecolor: "#aab2bd",
+    mirror: closeBox ? "ticks" : false,
+  };
 
   const layout = {
     title: {
@@ -276,56 +350,94 @@ function plot() {
       font: { size: Math.round(fontSize * 1.3), family: fontFamily, color: textColor },
     },
     font: { family: fontFamily, size: fontSize, color: textColor },
-    xaxis: {
-      title: {
-        text: els.xLabelInput.value || "m/z",
-        font: { size: fontSize, family: fontFamily, color: textColor },
-      },
-      tickfont: { size: fontSize, family: fontFamily, color: textColor },
-      range: [xMin, xMax],
-      zeroline: false,
-      showgrid: showGrid,
-      gridcolor: gridColor,
-      linecolor: textColor,
-      tickcolor: textColor,
-      mirror: closeBox ? "ticks" : false,
-      showline: true,
-    },
-    yaxis: {
-      title: {
-        text: els.yLabelInput.value || t().hoverIntensity,
-        font: { size: fontSize, family: fontFamily, color: textColor },
-      },
-      tickfont: { size: fontSize, family: fontFamily, color: textColor },
-      range: [0, yMax + yPadding],
-      zeroline: true,
-      zerolinecolor: "#aab2bd",
-      showgrid: showGrid,
-      gridcolor: gridColor,
-      linecolor: textColor,
-      tickcolor: textColor,
-      mirror: closeBox ? "ticks" : false,
-      showline: true,
-    },
     margin: { l: 70, r: 30, t: 60, b: 60 },
     plot_bgcolor: bgColor,
     paper_bgcolor: bgColor,
     hovermode: "closest",
   };
 
-  if (els.labelInput.checked) {
-    const threshold = parseFloat(els.thresholdInput.value) || 0;
-    const decimals = parseInt(els.decimalsInput.value, 10) || 0;
-    layout.annotations = buildAnnotations(
-      parsed.mz,
-      intensity,
-      threshold,
-      decimals,
-      fontSize,
-      fontFamily,
-      textColor
-    );
+  let traces;
+  let annotations = [];
+  const threshold = parseFloat(els.thresholdInput.value) || 0;
+  const decimals = parseInt(els.decimalsInput.value, 10) || 0;
+
+  if (hasSecond) {
+    const topDomain = [0.54, 1.0];
+    const bottomDomain = [0.0, 0.46];
+
+    layout.xaxis = {
+      ...xAxisBase,
+      domain: [0, 1],
+      anchor: "y",
+      title: {
+        text: xLabelText,
+        font: { size: fontSize, family: fontFamily, color: textColor },
+      },
+    };
+    layout.xaxis2 = {
+      ...xAxisBase,
+      domain: [0, 1],
+      anchor: "y2",
+      matches: "x",
+      showticklabels: false,
+      title: "",
+    };
+    layout.yaxis = {
+      ...yAxisBase,
+      domain: bottomDomain,
+      anchor: "x",
+      range: [0, yMax2 + yPadding2],
+      title: {
+        text: yLabelText,
+        font: { size: fontSize, family: fontFamily, color: textColor },
+      },
+    };
+    layout.yaxis2 = {
+      ...yAxisBase,
+      domain: topDomain,
+      anchor: "x2",
+      range: [0, yMax + yPadding],
+      title: {
+        text: yLabelText,
+        font: { size: fontSize, family: fontFamily, color: textColor },
+      },
+    };
+
+    const topTraces = buildStemTraces(parsed.mz, intensity, color, "x2", "y2");
+    const bottomTraces = buildStemTraces(parsed2.mz, intensity2, color2, "x", "y");
+    traces = topTraces.concat(bottomTraces);
+
+    if (els.labelInput.checked) {
+      annotations = annotations.concat(
+        buildAnnotations(parsed.mz, intensity, threshold, decimals, fontSize, fontFamily, textColor, "x2", "y2"),
+        buildAnnotations(parsed2.mz, intensity2, threshold, decimals, fontSize, fontFamily, textColor, "x", "y")
+      );
+    }
+  } else {
+    layout.xaxis = {
+      ...xAxisBase,
+      title: {
+        text: xLabelText,
+        font: { size: fontSize, family: fontFamily, color: textColor },
+      },
+    };
+    layout.yaxis = {
+      ...yAxisBase,
+      range: [0, yMax + yPadding],
+      title: {
+        text: yLabelText,
+        font: { size: fontSize, family: fontFamily, color: textColor },
+      },
+    };
+
+    traces = buildStemTraces(parsed.mz, intensity, color);
+
+    if (els.labelInput.checked) {
+      annotations = buildAnnotations(parsed.mz, intensity, threshold, decimals, fontSize, fontFamily, textColor);
+    }
   }
+
+  if (annotations.length) layout.annotations = annotations;
 
   const width = parseInt(els.widthInput.value, 10);
   const height = parseInt(els.heightInput.value, 10);
@@ -345,9 +457,36 @@ function plot() {
   }
 
   Plotly.react(els.chart, traces, layout, { responsive, displaylogo: false });
+  attachZoomClamp();
 
-  const extra = parsed.errors.length ? t().statusLinesIgnored(parsed.errors.length) : "";
-  setStatus(t().statusGenerated(parsed.mz.length, extra), "success");
+  const totalPeaks = parsed.mz.length + (hasSecond ? parsed2.mz.length : 0);
+  const ignored = parsed.errors.length + (hasSecond ? parsed2.errors.length : 0);
+  const extra = ignored ? t().statusLinesIgnored(ignored) : "";
+  setStatus(t().statusGenerated(totalPeaks, extra), "success");
+}
+
+function attachZoomClamp() {
+  if (els.chart._yClampAttached) return;
+  els.chart._yClampAttached = true;
+  els.chart.on("plotly_relayout", (eventData) => {
+    if (!eventData) return;
+    const updates = {};
+    ["yaxis", "yaxis2"].forEach((ax) => {
+      const lowKey = `${ax}.range[0]`;
+      const highKey = `${ax}.range[1]`;
+      const low = eventData[lowKey];
+      const high = eventData[highKey];
+      if (low !== undefined && low < 0) {
+        updates[lowKey] = 0;
+        if (high !== undefined && high <= 0) {
+          updates[highKey] = Math.max(high, 1);
+        }
+      }
+    });
+    if (Object.keys(updates).length) {
+      Plotly.relayout(els.chart, updates);
+    }
+  });
 }
 
 function downloadPng() {
@@ -367,10 +506,10 @@ function downloadPng() {
   });
 }
 
-function readFile(file) {
+function readFile(file, targetInput = els.dataInput) {
   const reader = new FileReader();
   reader.onload = (e) => {
-    els.dataInput.value = e.target.result;
+    targetInput.value = e.target.result;
     setStatus(t().statusFileLoaded(file.name), "success");
   };
   reader.onerror = () => setStatus(t().statusFileError, "error");
@@ -437,9 +576,32 @@ els.clearBtn.addEventListener("click", () => {
 });
 els.fileInput.addEventListener("change", (e) => {
   const file = e.target.files[0];
-  if (file) readFile(file);
+  if (file) readFile(file, els.dataInput);
   e.target.value = "";
 });
+els.loadExampleBtn2.addEventListener("click", () => {
+  els.dataInput2.value = EXAMPLE_2;
+  setStatus(t().statusExampleLoaded);
+});
+els.clearBtn2.addEventListener("click", () => {
+  els.dataInput2.value = "";
+  setStatus("");
+});
+els.fileInput2.addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (file) readFile(file, els.dataInput2);
+  e.target.value = "";
+});
+
+function updateCompareVisibility() {
+  const on = els.compareInput.checked;
+  els.secondSpectrumGroup.hidden = !on;
+}
+els.compareInput.addEventListener("change", () => {
+  updateCompareVisibility();
+  replotIfReady();
+});
+updateCompareVisibility();
 
 const replotIfReady = () => {
   if (els.chart.data) plot();
@@ -461,6 +623,7 @@ els.previewSizeInput.addEventListener("change", replotIfReady);
   els.xMinInput,
   els.xMaxInput,
   els.boxInput,
+  els.colorInput2,
 ].forEach((el) => {
   el.addEventListener("change", replotIfReady);
 });

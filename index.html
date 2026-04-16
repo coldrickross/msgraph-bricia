@@ -36,6 +36,19 @@
         </div>
       </div>
 
+      <div class="input-group second-spectrum" id="second-spectrum-group" hidden>
+        <label for="data-input-2" data-i18n="dataLabel2">Dados do segundo espectro (m/z, intensidade)</label>
+        <textarea id="data-input-2" rows="10" data-i18n-placeholder="dataPlaceholder" placeholder="Um par por linha. Separadores aceitos: vírgula, ponto e vírgula, tab ou espaço."></textarea>
+        <div class="button-row">
+          <button id="load-example-2" type="button" data-i18n="loadExample2">Carregar exemplo 2</button>
+          <button id="clear-data-2" type="button" class="secondary" data-i18n="clear2">Limpar 2</button>
+          <label class="file-button" data-i18n="loadFile2">
+            Carregar arquivo 2 (.csv/.txt)
+            <input type="file" id="file-input-2" accept=".csv,.txt,.tsv" hidden />
+          </label>
+        </div>
+      </div>
+
       <div class="options-group">
         <div class="option">
           <label for="title-input" data-i18n="chartTitle">Título do gráfico</label>
@@ -52,6 +65,10 @@
         <div class="option">
           <label for="color-input" data-i18n="peakColor">Cor dos picos</label>
           <input type="color" id="color-input" value="#1f4e8b" />
+        </div>
+        <div class="option">
+          <label for="color-input-2" data-i18n="peakColor2">Cor dos picos (2º)</label>
+          <input type="color" id="color-input-2" value="#c94e4e" />
         </div>
         <div class="option">
           <label for="bgcolor-input" data-i18n="bgColor">Cor de fundo</label>
@@ -131,6 +148,10 @@
         <div class="option checkbox">
           <input type="checkbox" id="preview-size-input" />
           <label for="preview-size-input" data-i18n="previewSize">Visualizar no tamanho de exportação</label>
+        </div>
+        <div class="option checkbox">
+          <input type="checkbox" id="compare-input" />
+          <label for="compare-input" data-i18n="compareSpectra">Adicionar segundo espectro abaixo</label>
         </div>
       </div>
 
