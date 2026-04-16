@@ -576,6 +576,7 @@ function plot() {
       anchor: "y2",
       matches: "x",
       showticklabels: false,
+      showline: false,
       title: "",
     };
     layout.xaxis3 = {
@@ -584,6 +585,7 @@ function plot() {
       anchor: "y3",
       matches: "x",
       showticklabels: false,
+      showline: false,
       title: "",
     };
     layout.yaxis = {
@@ -662,6 +664,7 @@ function plot() {
       anchor: "y2",
       matches: "x",
       showticklabels: false,
+      showline: false,
       title: "",
     };
     layout.yaxis = {
