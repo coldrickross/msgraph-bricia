@@ -53,6 +53,41 @@
           <label for="color-input" data-i18n="peakColor">Cor dos picos</label>
           <input type="color" id="color-input" value="#1f4e8b" />
         </div>
+        <div class="option">
+          <label for="bgcolor-input" data-i18n="bgColor">Cor de fundo</label>
+          <input type="color" id="bgcolor-input" value="#ffffff" />
+        </div>
+        <div class="option">
+          <label for="textcolor-input" data-i18n="textColor">Cor do texto</label>
+          <input type="color" id="textcolor-input" value="#1c2430" />
+        </div>
+        <div class="option">
+          <label for="gridcolor-input" data-i18n="gridColor">Cor da grade</label>
+          <input type="color" id="gridcolor-input" value="#eceff3" />
+        </div>
+        <div class="option">
+          <label for="font-family-input" data-i18n="fontFamily">Fonte</label>
+          <select id="font-family-input">
+            <option value="Arial, Helvetica, sans-serif">Arial</option>
+            <option value="Helvetica, Arial, sans-serif">Helvetica</option>
+            <option value="'Times New Roman', Times, serif">Times New Roman</option>
+            <option value="Georgia, serif">Georgia</option>
+            <option value="'Courier New', Courier, monospace">Courier New</option>
+            <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
+            <option value="Verdana, Geneva, sans-serif">Verdana</option>
+            <option value="Tahoma, Geneva, sans-serif">Tahoma</option>
+            <option value="'Comic Sans MS', cursive">Comic Sans MS</option>
+            <option value="'Lucida Console', Monaco, monospace">Lucida Console</option>
+          </select>
+        </div>
+        <div class="option">
+          <label for="font-size-input" data-i18n="fontSize">Tamanho da fonte (px)</label>
+          <input type="number" id="font-size-input" value="14" min="6" max="48" step="1" />
+        </div>
+        <div class="option checkbox">
+          <input type="checkbox" id="grid-input" checked />
+          <label for="grid-input" data-i18n="showGrid">Mostrar grade</label>
+        </div>
         <div class="option checkbox">
           <input type="checkbox" id="normalize-input" checked />
           <label for="normalize-input" data-i18n="normalize">Normalizar para pico base (100%)</label>

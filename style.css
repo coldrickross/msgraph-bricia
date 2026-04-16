@@ -111,7 +111,8 @@ main {
 
 textarea,
 input[type="text"],
-input[type="number"] {
+input[type="number"],
+select {
   width: 100%;
   padding: 0.55rem 0.65rem;
   border: 1px solid var(--border);
@@ -120,6 +121,11 @@ input[type="number"] {
   font-size: 0.9rem;
   background: #fafbfc;
   color: var(--text);
+}
+
+select {
+  font-family: inherit;
+  cursor: pointer;
 }
 
 textarea {

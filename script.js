@@ -4,6 +4,12 @@ const els = {
   xLabelInput: document.getElementById("xlabel-input"),
   yLabelInput: document.getElementById("ylabel-input"),
   colorInput: document.getElementById("color-input"),
+  bgColorInput: document.getElementById("bgcolor-input"),
+  textColorInput: document.getElementById("textcolor-input"),
+  gridColorInput: document.getElementById("gridcolor-input"),
+  fontFamilyInput: document.getElementById("font-family-input"),
+  fontSizeInput: document.getElementById("font-size-input"),
+  gridInput: document.getElementById("grid-input"),
   normalizeInput: document.getElementById("normalize-input"),
   labelInput: document.getElementById("label-input"),
   thresholdInput: document.getElementById("threshold-input"),
@@ -38,6 +44,12 @@ const TRANSLATIONS = {
     yLabel: "Rótulo Y",
     yLabelDefault: "Intensidade relativa (%)",
     peakColor: "Cor dos picos",
+    bgColor: "Cor de fundo",
+    textColor: "Cor do texto",
+    gridColor: "Cor da grade",
+    fontFamily: "Fonte",
+    fontSize: "Tamanho da fonte (px)",
+    showGrid: "Mostrar grade",
     normalize: "Normalizar para pico base (100%)",
     labelPeaks: "Rotular picos principais",
     threshold: "Limite para rótulos (%)",
@@ -78,6 +90,12 @@ const TRANSLATIONS = {
     yLabel: "Y label",
     yLabelDefault: "Relative intensity (%)",
     peakColor: "Peak color",
+    bgColor: "Background color",
+    textColor: "Text color",
+    gridColor: "Grid color",
+    fontFamily: "Font",
+    fontSize: "Font size (px)",
+    showGrid: "Show grid",
     normalize: "Normalize to base peak (100%)",
     labelPeaks: "Label main peaks",
     threshold: "Label threshold (%)",
@@ -192,7 +210,7 @@ function buildStemTraces(mz, intensity, color) {
   return [stems, markers];
 }
 
-function buildAnnotations(mz, intensity, threshold, decimals) {
+function buildAnnotations(mz, intensity, threshold, decimals, fontSize, fontFamily, textColor) {
   return mz
     .map((m, idx) => ({ m, i: intensity[idx] }))
     .filter((p) => p.i >= threshold)
@@ -202,7 +220,7 @@ function buildAnnotations(mz, intensity, threshold, decimals) {
       text: p.m.toFixed(decimals),
       showarrow: false,
       yshift: 10,
-      font: { size: 11, color: "#333" },
+      font: { size: fontSize, color: textColor, family: fontFamily },
     }));
 }
 
@@ -222,6 +240,12 @@ function plot() {
   }
 
   const color = els.colorInput.value;
+  const bgColor = els.bgColorInput.value;
+  const textColor = els.textColorInput.value;
+  const gridColor = els.gridColorInput.value;
+  const fontFamily = els.fontFamilyInput.value;
+  const fontSize = parseInt(els.fontSizeInput.value, 10) || 14;
+  const showGrid = els.gridInput.checked;
   const traces = buildStemTraces(parsed.mz, intensity, color);
 
   const yMax = Math.max(...intensity);
@@ -231,32 +255,56 @@ function plot() {
   const xPadding = Math.max((xMax - xMin) * 0.05, 1);
 
   const layout = {
-    title: { text: els.titleInput.value || "", font: { size: 16 } },
+    title: {
+      text: els.titleInput.value || "",
+      font: { size: Math.round(fontSize * 1.3), family: fontFamily, color: textColor },
+    },
+    font: { family: fontFamily, size: fontSize, color: textColor },
     xaxis: {
-      title: { text: els.xLabelInput.value || "m/z" },
+      title: {
+        text: els.xLabelInput.value || "m/z",
+        font: { size: fontSize, family: fontFamily, color: textColor },
+      },
+      tickfont: { size: fontSize, family: fontFamily, color: textColor },
       range: [xMin - xPadding, xMax + xPadding],
       zeroline: false,
-      showgrid: true,
-      gridcolor: "#eceff3",
+      showgrid: showGrid,
+      gridcolor: gridColor,
+      linecolor: textColor,
+      tickcolor: textColor,
     },
     yaxis: {
-      title: { text: els.yLabelInput.value || t().hoverIntensity },
+      title: {
+        text: els.yLabelInput.value || t().hoverIntensity,
+        font: { size: fontSize, family: fontFamily, color: textColor },
+      },
+      tickfont: { size: fontSize, family: fontFamily, color: textColor },
       range: [0, yMax + yPadding],
       zeroline: true,
       zerolinecolor: "#aab2bd",
-      showgrid: true,
-      gridcolor: "#eceff3",
+      showgrid: showGrid,
+      gridcolor: gridColor,
+      linecolor: textColor,
+      tickcolor: textColor,
     },
     margin: { l: 70, r: 30, t: 60, b: 60 },
-    plot_bgcolor: "#ffffff",
-    paper_bgcolor: "#ffffff",
+    plot_bgcolor: bgColor,
+    paper_bgcolor: bgColor,
     hovermode: "closest",
   };
 
   if (els.labelInput.checked) {
     const threshold = parseFloat(els.thresholdInput.value) || 0;
     const decimals = parseInt(els.decimalsInput.value, 10) || 0;
-    layout.annotations = buildAnnotations(parsed.mz, intensity, threshold, decimals);
+    layout.annotations = buildAnnotations(
+      parsed.mz,
+      intensity,
+      threshold,
+      decimals,
+      fontSize,
+      fontFamily,
+      textColor
+    );
   }
 
   const width = parseInt(els.widthInput.value, 10);
@@ -381,6 +429,17 @@ els.previewSizeInput.addEventListener("change", replotIfReady);
   el.addEventListener("change", () => {
     if (els.previewSizeInput.checked) replotIfReady();
   });
+});
+
+[
+  els.bgColorInput,
+  els.textColorInput,
+  els.gridColorInput,
+  els.fontFamilyInput,
+  els.fontSizeInput,
+  els.gridInput,
+].forEach((el) => {
+  el.addEventListener("change", replotIfReady);
 });
 
 document.querySelectorAll(".lang-btn").forEach((btn) => {
