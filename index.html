@@ -105,6 +105,18 @@
           <input type="number" id="decimals-input" value="1" min="0" max="4" step="1" />
         </div>
         <div class="option">
+          <label for="xmin-input" data-i18n="xMin">m/z mínimo (auto se vazio)</label>
+          <input type="number" id="xmin-input" step="any" placeholder="auto" />
+        </div>
+        <div class="option">
+          <label for="xmax-input" data-i18n="xMax">m/z máximo (auto se vazio)</label>
+          <input type="number" id="xmax-input" step="any" placeholder="auto" />
+        </div>
+        <div class="option checkbox">
+          <input type="checkbox" id="box-input" />
+          <label for="box-input" data-i18n="closeBox">Fechar caixa do gráfico</label>
+        </div>
+        <div class="option">
           <label for="width-input" data-i18n="width">Largura (px)</label>
           <input type="number" id="width-input" value="1200" min="200" max="8000" step="10" />
         </div>
