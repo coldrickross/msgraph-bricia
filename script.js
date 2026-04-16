@@ -570,7 +570,7 @@ function plot() {
     ...axisCommon,
     rangemode: "nonnegative",
     zeroline: true,
-    zerolinecolor: "#aab2bd",
+    zerolinecolor: textColor,
     mirror: closeBox ? "ticks" : false,
   };
 
