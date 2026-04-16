@@ -25,21 +25,29 @@ const els = {
   scaleInput: document.getElementById("scale-input"),
   previewSizeInput: document.getElementById("preview-size-input"),
   compareInput: document.getElementById("compare-input"),
+  compareInput3: document.getElementById("compare-input-3"),
   secondSpectrumGroup: document.getElementById("second-spectrum-group"),
+  thirdSpectrumGroup: document.getElementById("third-spectrum-group"),
+  dataInput3: document.getElementById("data-input-3"),
+  colorInput3: document.getElementById("color-input-3"),
   yShowInput: document.getElementById("yshow-input"),
   yShowInput2: document.getElementById("yshow-input-2"),
+  yShowInput3: document.getElementById("yshow-input-3"),
   lockYInput: document.getElementById("lock-y-input"),
   gapInput: document.getElementById("gap-input"),
   plotBtn: document.getElementById("plot-btn"),
   downloadBtn: document.getElementById("download-btn"),
   loadExampleBtn: document.getElementById("load-example"),
   loadExampleBtn2: document.getElementById("load-example-2"),
+  loadExampleBtn3: document.getElementById("load-example-3"),
   clearBtn: document.getElementById("clear-data"),
   clearBtn2: document.getElementById("clear-data-2"),
+  clearBtn3: document.getElementById("clear-data-3"),
   clickSelectInput: document.getElementById("click-select-input"),
   clearSelectionBtn: document.getElementById("clear-selection-btn"),
   fileInput: document.getElementById("file-input"),
   fileInput2: document.getElementById("file-input-2"),
+  fileInput3: document.getElementById("file-input-3"),
   status: document.getElementById("status"),
   chart: document.getElementById("chart"),
 };
@@ -60,14 +68,21 @@ const TRANSLATIONS = {
     clear2: "Limpar 2",
     loadFile2: "Carregar arquivo 2 (.csv/.txt)",
     peakColor2: "Cor dos picos (2º)",
+    dataLabel3: "Dados do terceiro espectro (m/z, intensidade)",
+    loadExample3: "Carregar exemplo 3",
+    clear3: "Limpar 3",
+    loadFile3: "Carregar arquivo 3 (.csv/.txt)",
+    peakColor3: "Cor dos picos (3º)",
     compareSpectra: "Adicionar segundo espectro abaixo",
+    compareSpectra3: "Adicionar terceiro espectro abaixo",
     tabData: "Dados",
     tabStyle: "Estilo",
     tabAxes: "Eixos e picos",
     tabExport: "Exportar",
     yShow: "Escala Y (%)",
     yShow2: "Escala Y 2º (%)",
-    lockY: "Travar escalas Y dos dois espectros",
+    yShow3: "Escala Y 3º (%)",
+    lockY: "Travar escalas Y dos espectros",
     gapBetween: "Espaço entre espectros (%)",
     chartTitle: "Título do gráfico",
     chartTitleDefault: "Espectro de Massa",
@@ -126,14 +141,21 @@ const TRANSLATIONS = {
     clear2: "Clear 2",
     loadFile2: "Load file 2 (.csv/.txt)",
     peakColor2: "Peak color (2nd)",
+    dataLabel3: "Third spectrum data (m/z, intensity)",
+    loadExample3: "Load example 3",
+    clear3: "Clear 3",
+    loadFile3: "Load file 3 (.csv/.txt)",
+    peakColor3: "Peak color (3rd)",
     compareSpectra: "Add a second spectrum below",
+    compareSpectra3: "Add a third spectrum below",
     tabData: "Data",
     tabStyle: "Style",
     tabAxes: "Axes & peaks",
     tabExport: "Export",
     yShow: "Y scale (%)",
     yShow2: "Y scale 2nd (%)",
-    lockY: "Lock Y scales of both spectra",
+    yShow3: "Y scale 3rd (%)",
+    lockY: "Lock Y scales of all spectra",
     gapBetween: "Gap between spectra (%)",
     chartTitle: "Chart title",
     chartTitleDefault: "Mass Spectrum",
@@ -215,6 +237,13 @@ const EXAMPLE_2 = `359.585052 1.793388
 394.570923 1.128782
 396.087158 6.391528
 421.711910 3.275671`;
+
+const EXAMPLE_3 = `243.190215 90.412556
+244.119112 220.567431
+256.225914 12.115204
+328.011245 8.235611
+377.119901 28912.453221
+421.388421 1.512330`;
 
 function setStatus(message, type = "") {
   els.status.textContent = message;
@@ -311,6 +340,7 @@ function buildAnnotations(mz, intensity, threshold, decimals, fontSize, fontFami
 
 const selectedMz1 = new Set();
 const selectedMz2 = new Set();
+const selectedMz3 = new Set();
 
 function pruneSelection(set, mzArray) {
   const valid = new Set(mzArray);
@@ -398,13 +428,18 @@ function plot() {
   const compareEnabled = els.compareInput.checked;
   const parsed2 = compareEnabled ? parseData(els.dataInput2.value) : { mz: [], intensity: [], errors: [] };
   const hasSecond = compareEnabled && parsed2.mz.length > 0;
+  const compareEnabled3 = compareEnabled && els.compareInput3.checked;
+  const parsed3 = compareEnabled3 ? parseData(els.dataInput3.value) : { mz: [], intensity: [], errors: [] };
+  const hasThird = compareEnabled3 && parsed3.mz.length > 0;
 
   const normalize = els.normalizeInput.checked;
   const intensity = normalizeIntensities(parsed.intensity, normalize);
   const intensity2 = hasSecond ? normalizeIntensities(parsed2.intensity, normalize) : [];
+  const intensity3 = hasThird ? normalizeIntensities(parsed3.intensity, normalize) : [];
 
   const color = els.colorInput.value;
   const color2 = els.colorInput2.value;
+  const color3 = els.colorInput3.value;
   const bgColor = els.bgColorInput.value;
   const textColor = els.textColorInput.value;
   const gridColor = els.gridColorInput.value;
@@ -415,16 +450,22 @@ function plot() {
 
   const yMax = Math.max(...intensity);
   const yMax2 = hasSecond ? Math.max(...intensity2) : 0;
+  const yMax3 = hasThird ? Math.max(...intensity3) : 0;
 
   const yShowPct = Math.max(parseFloat(els.yShowInput.value) || 100, 0.1);
   const lockY = els.lockYInput.checked;
   const yShowPct2Raw = Math.max(parseFloat(els.yShowInput2.value) || 100, 0.1);
   const yShowPct2 = hasSecond && lockY ? yShowPct : yShowPct2Raw;
+  const yShowPct3Raw = Math.max(parseFloat(els.yShowInput3.value) || 100, 0.1);
+  const yShowPct3 = hasThird && lockY ? yShowPct : yShowPct3Raw;
 
   const yAxisTop = (yShowPct / 100) * yMax * 1.12;
   const yAxisTop2 = hasSecond ? (yShowPct2 / 100) * yMax2 * 1.12 : 0;
+  const yAxisTop3 = hasThird ? (yShowPct3 / 100) * yMax3 * 1.12 : 0;
 
-  const allMz = hasSecond ? parsed.mz.concat(parsed2.mz) : parsed.mz;
+  let allMz = parsed.mz;
+  if (hasSecond) allMz = allMz.concat(parsed2.mz);
+  if (hasThird) allMz = allMz.concat(parsed3.mz);
   const dataXMin = Math.min(...allMz);
   const dataXMax = Math.max(...allMz);
   const xMinRaw = els.xMinInput.value.trim();
@@ -435,7 +476,7 @@ function plot() {
   const xMin = Number.isFinite(xMinUser) ? xMinUser : dataXMin - xPadding;
   const xMax = Number.isFinite(xMaxUser) ? xMaxUser : dataXMax + xPadding;
   const closeBox = els.boxInput.checked;
-  const xLabelText = els.xLabelInput.value || "m/z";
+  const xLabelText = els.xLabelInput.value || "<i>m/z</i>";
   const yLabelText = els.yLabelInput.value || t().hoverIntensity;
 
   const axisCommon = {
@@ -492,8 +533,109 @@ function plot() {
 
   pruneSelection(selectedMz1, parsed.mz);
   if (compareEnabled) pruneSelection(selectedMz2, parsed2.mz);
+  if (compareEnabled3) pruneSelection(selectedMz3, parsed3.mz);
 
-  if (hasSecond) {
+  if (hasThird) {
+    const gapPctRaw = Math.max(parseFloat(els.gapInput.value) || 0, 0);
+    const gapPct = Math.min(gapPctRaw, 30);
+    const gap = gapPct / 100;
+    const third = (1 - 2 * gap) / 3;
+    const bottomDomain = [0, third];
+    const middleDomain = [third + gap, 2 * third + gap];
+    const topDomain = [2 * third + 2 * gap, 1];
+
+    layout.xaxis = {
+      ...xAxisBase,
+      domain: [0, 1],
+      anchor: "y",
+      title: {
+        text: xLabelText,
+        font: { size: fontSize, family: fontFamily, color: textColor },
+      },
+    };
+    layout.xaxis2 = {
+      ...xAxisBase,
+      domain: [0, 1],
+      anchor: "y2",
+      matches: "x",
+      showticklabels: false,
+      title: "",
+    };
+    layout.xaxis3 = {
+      ...xAxisBase,
+      domain: [0, 1],
+      anchor: "y3",
+      matches: "x",
+      showticklabels: false,
+      title: "",
+    };
+    layout.yaxis = {
+      ...yAxisBase,
+      domain: bottomDomain,
+      anchor: "x",
+      range: [0, yAxisTop3],
+      title: {
+        text: yLabelText,
+        font: { size: fontSize, family: fontFamily, color: textColor },
+      },
+    };
+    layout.yaxis2 = {
+      ...yAxisBase,
+      domain: middleDomain,
+      anchor: "x2",
+      range: [0, yAxisTop2],
+      title: {
+        text: yLabelText,
+        font: { size: fontSize, family: fontFamily, color: textColor },
+      },
+    };
+    layout.yaxis3 = {
+      ...yAxisBase,
+      domain: topDomain,
+      anchor: "x3",
+      range: [0, yAxisTop],
+      title: {
+        text: yLabelText,
+        font: { size: fontSize, family: fontFamily, color: textColor },
+      },
+    };
+
+    const topTraces = buildStemTraces(parsed.mz, intensity, color, "x3", "y3", showPeakMarkers);
+    const middleTraces = buildStemTraces(parsed2.mz, intensity2, color2, "x2", "y2", showPeakMarkers);
+    const bottomTraces = buildStemTraces(parsed3.mz, intensity3, color3, "x", "y", showPeakMarkers);
+    traces = topTraces.concat(middleTraces, bottomTraces);
+
+    const autoSet1 = new Set();
+    const autoSet2 = new Set();
+    const autoSet3 = new Set();
+    let annos1 = [];
+    let annos2 = [];
+    let annos3 = [];
+    if (els.labelInput.checked) {
+      const a1 = buildAnnotations(parsed.mz, intensity, threshold, decimals, fontSize, fontFamily, textColor, "x3", "y3");
+      const a2 = buildAnnotations(parsed2.mz, intensity2, threshold, decimals, fontSize, fontFamily, textColor, "x2", "y2");
+      const a3 = buildAnnotations(parsed3.mz, intensity3, threshold, decimals, fontSize, fontFamily, textColor, "x", "y");
+      a1.forEach((a) => autoSet1.add(a.x));
+      a2.forEach((a) => autoSet2.add(a.x));
+      a3.forEach((a) => autoSet3.add(a.x));
+      annos1 = annos1.concat(a1);
+      annos2 = annos2.concat(a2);
+      annos3 = annos3.concat(a3);
+    }
+    annos1 = annos1.concat(
+      buildManualAnnotations(parsed.mz, intensity, selectedMz1, autoSet1, decimals, fontSize, fontFamily, textColor, "x3", "y3")
+    );
+    annos2 = annos2.concat(
+      buildManualAnnotations(parsed2.mz, intensity2, selectedMz2, autoSet2, decimals, fontSize, fontFamily, textColor, "x2", "y2")
+    );
+    annos3 = annos3.concat(
+      buildManualAnnotations(parsed3.mz, intensity3, selectedMz3, autoSet3, decimals, fontSize, fontFamily, textColor, "x", "y")
+    );
+    avoidStemCollisions(annos1, parsed.mz, intensity, xMin, xMax, plotWidthPx, fontSize);
+    avoidStemCollisions(annos2, parsed2.mz, intensity2, xMin, xMax, plotWidthPx, fontSize);
+    avoidStemCollisions(annos3, parsed3.mz, intensity3, xMin, xMax, plotWidthPx, fontSize);
+    annotations = annotations.concat(annos1, annos2, annos3);
+  } else if (hasSecond) {
     const gapPct = Math.min(Math.max(parseFloat(els.gapInput.value) || 0, 0), 80);
     const half = (1 - gapPct / 100) / 2;
     const topDomain = [1 - half, 1.0];
@@ -615,8 +757,10 @@ function plot() {
   attachZoomClamp();
   attachClickToSelect();
 
-  const totalPeaks = parsed.mz.length + (hasSecond ? parsed2.mz.length : 0);
-  const ignored = parsed.errors.length + (hasSecond ? parsed2.errors.length : 0);
+  const totalPeaks =
+    parsed.mz.length + (hasSecond ? parsed2.mz.length : 0) + (hasThird ? parsed3.mz.length : 0);
+  const ignored =
+    parsed.errors.length + (hasSecond ? parsed2.errors.length : 0) + (hasThird ? parsed3.errors.length : 0);
   const extra = ignored ? t().statusLinesIgnored(ignored) : "";
   setStatus(t().statusGenerated(totalPeaks, extra), "success");
 }
@@ -630,7 +774,17 @@ function attachClickToSelect() {
     const p = evt.points[0];
     const axisRef = p.data && p.data.xaxis ? p.data.xaxis : "x";
     const compareEnabled = els.compareInput.checked;
-    const set = compareEnabled && axisRef === "x" ? selectedMz2 : selectedMz1;
+    const compareEnabled3 = compareEnabled && els.compareInput3.checked;
+    let set;
+    if (compareEnabled3) {
+      // 3 spectra: x3=top(1), x2=middle(2), x=bottom(3)
+      set = axisRef === "x" ? selectedMz3 : axisRef === "x2" ? selectedMz2 : selectedMz1;
+    } else if (compareEnabled) {
+      // 2 spectra: x2=top(1), x=bottom(2)
+      set = axisRef === "x" ? selectedMz2 : selectedMz1;
+    } else {
+      set = selectedMz1;
+    }
     const m = p.x;
     if (set.has(m)) set.delete(m);
     else set.add(m);
@@ -644,7 +798,7 @@ function attachZoomClamp() {
   els.chart.on("plotly_relayout", (eventData) => {
     if (!eventData) return;
     const updates = {};
-    ["yaxis", "yaxis2"].forEach((ax) => {
+    ["yaxis", "yaxis2", "yaxis3"].forEach((ax) => {
       const lowKey = `${ax}.range[0]`;
       const highKey = `${ax}.range[1]`;
       const low = eventData[lowKey];
@@ -742,6 +896,7 @@ els.downloadBtn.addEventListener("click", downloadPng);
 els.clearSelectionBtn.addEventListener("click", () => {
   selectedMz1.clear();
   selectedMz2.clear();
+  selectedMz3.clear();
   if (els.chart.data) plot();
 });
 els.loadExampleBtn.addEventListener("click", () => {
@@ -770,6 +925,19 @@ els.fileInput2.addEventListener("change", (e) => {
   if (file) readFile(file, els.dataInput2);
   e.target.value = "";
 });
+els.loadExampleBtn3.addEventListener("click", () => {
+  els.dataInput3.value = EXAMPLE_3;
+  setStatus(t().statusExampleLoaded);
+});
+els.clearBtn3.addEventListener("click", () => {
+  els.dataInput3.value = "";
+  setStatus("");
+});
+els.fileInput3.addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (file) readFile(file, els.dataInput3);
+  e.target.value = "";
+});
 
 function updateCompareVisibility() {
   const on = els.compareInput.checked;
@@ -777,15 +945,29 @@ function updateCompareVisibility() {
   document.querySelectorAll(".compare-only").forEach((el) => {
     el.hidden = !on;
   });
+  updateCompare3Visibility();
+}
+
+function updateCompare3Visibility() {
+  const on = els.compareInput.checked && els.compareInput3.checked;
+  els.thirdSpectrumGroup.hidden = !on;
+  document.querySelectorAll(".compare3-only").forEach((el) => {
+    el.hidden = !on;
+  });
 }
 
 function syncYShowFromLock(source) {
   if (!els.lockYInput.checked) return;
-  const target = source === els.yShowInput ? els.yShowInput2 : els.yShowInput;
-  if (target.value !== source.value) target.value = source.value;
+  [els.yShowInput, els.yShowInput2, els.yShowInput3].forEach((target) => {
+    if (target !== source && target.value !== source.value) target.value = source.value;
+  });
 }
 els.compareInput.addEventListener("change", () => {
   updateCompareVisibility();
+  replotIfReady();
+});
+els.compareInput3.addEventListener("change", () => {
+  updateCompare3Visibility();
   replotIfReady();
 });
 updateCompareVisibility();
@@ -811,19 +993,23 @@ els.previewSizeInput.addEventListener("change", replotIfReady);
   els.xMaxInput,
   els.boxInput,
   els.colorInput2,
+  els.colorInput3,
   els.gapInput,
   els.peakMarkerInput,
 ].forEach((el) => {
   el.addEventListener("change", replotIfReady);
 });
 
-[els.yShowInput, els.yShowInput2].forEach((el) => {
+[els.yShowInput, els.yShowInput2, els.yShowInput3].forEach((el) => {
   el.addEventListener("input", () => syncYShowFromLock(el));
   el.addEventListener("change", replotIfReady);
 });
 
 els.lockYInput.addEventListener("change", () => {
-  if (els.lockYInput.checked) els.yShowInput2.value = els.yShowInput.value;
+  if (els.lockYInput.checked) {
+    els.yShowInput2.value = els.yShowInput.value;
+    els.yShowInput3.value = els.yShowInput.value;
+  }
   replotIfReady();
 });
 
