@@ -62,6 +62,24 @@
               </label>
             </div>
           </div>
+
+          <div class="option checkbox compare-toggle compare-only" hidden>
+            <input type="checkbox" id="compare-input-3" />
+            <label for="compare-input-3" data-i18n="compareSpectra3">Adicionar terceiro espectro abaixo</label>
+          </div>
+
+          <div class="input-group second-spectrum" id="third-spectrum-group" hidden>
+            <label for="data-input-3" data-i18n="dataLabel3">Dados do terceiro espectro (m/z, intensidade)</label>
+            <textarea id="data-input-3" rows="8" data-i18n-placeholder="dataPlaceholder" placeholder="Um par por linha. Separadores aceitos: vírgula, ponto e vírgula, tab ou espaço."></textarea>
+            <div class="button-row">
+              <button id="load-example-3" type="button" data-i18n="loadExample3">Carregar exemplo 3</button>
+              <button id="clear-data-3" type="button" class="secondary" data-i18n="clear3">Limpar 3</button>
+              <label class="file-button" data-i18n="loadFile3">
+                Carregar arquivo 3 (.csv/.txt)
+                <input type="file" id="file-input-3" accept=".csv,.txt,.tsv" hidden />
+              </label>
+            </div>
+          </div>
         </div>
 
         <div class="tab-panel" data-panel="style" hidden>
@@ -72,7 +90,7 @@
             </div>
             <div class="option">
               <label for="xlabel-input" data-i18n="xLabel">Rótulo X</label>
-              <input type="text" id="xlabel-input" value="m/z" />
+              <input type="text" id="xlabel-input" value="<i>m/z</i>" />
             </div>
             <div class="option">
               <label for="ylabel-input" data-i18n="yLabel">Rótulo Y</label>
@@ -85,6 +103,10 @@
             <div class="option">
               <label for="color-input-2" data-i18n="peakColor2">Cor dos picos (2º)</label>
               <input type="color" id="color-input-2" value="#c94e4e" />
+            </div>
+            <div class="option compare3-only" hidden>
+              <label for="color-input-3" data-i18n="peakColor3">Cor dos picos (3º)</label>
+              <input type="color" id="color-input-3" value="#2e8b57" />
             </div>
             <div class="option">
               <label for="bgcolor-input" data-i18n="bgColor">Cor de fundo</label>
@@ -146,9 +168,13 @@
               <label for="yshow-input-2" data-i18n="yShow2">Escala Y 2º (%)</label>
               <input type="number" id="yshow-input-2" value="100" min="1" max="1000" step="1" />
             </div>
+            <div class="option compare3-only" hidden>
+              <label for="yshow-input-3" data-i18n="yShow3">Escala Y 3º (%)</label>
+              <input type="number" id="yshow-input-3" value="100" min="1" max="1000" step="1" />
+            </div>
             <div class="option checkbox compare-only" hidden>
               <input type="checkbox" id="lock-y-input" checked />
-              <label for="lock-y-input" data-i18n="lockY">Travar escalas Y dos dois espectros</label>
+              <label for="lock-y-input" data-i18n="lockY">Travar escalas Y dos espectros</label>
             </div>
             <div class="option checkbox">
               <input type="checkbox" id="label-input" checked />
