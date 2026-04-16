@@ -194,6 +194,14 @@ button.secondary {
   min-height: 520px;
 }
 
+.chart-area {
+  overflow: auto;
+}
+
+#chart[style*="width"] {
+  min-height: 0;
+}
+
 footer {
   text-align: center;
   padding: 1rem;

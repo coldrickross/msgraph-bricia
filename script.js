@@ -8,6 +8,10 @@ const els = {
   labelInput: document.getElementById("label-input"),
   thresholdInput: document.getElementById("threshold-input"),
   decimalsInput: document.getElementById("decimals-input"),
+  widthInput: document.getElementById("width-input"),
+  heightInput: document.getElementById("height-input"),
+  scaleInput: document.getElementById("scale-input"),
+  previewSizeInput: document.getElementById("preview-size-input"),
   plotBtn: document.getElementById("plot-btn"),
   downloadBtn: document.getElementById("download-btn"),
   loadExampleBtn: document.getElementById("load-example"),
@@ -169,7 +173,24 @@ function plot() {
     layout.annotations = buildAnnotations(parsed.mz, intensity, threshold, decimals);
   }
 
-  Plotly.react(els.chart, traces, layout, { responsive: true, displaylogo: false });
+  const width = parseInt(els.widthInput.value, 10);
+  const height = parseInt(els.heightInput.value, 10);
+  const previewAtExportSize = els.previewSizeInput.checked;
+  const responsive = !previewAtExportSize;
+
+  if (previewAtExportSize && width > 0 && height > 0) {
+    layout.width = width;
+    layout.height = height;
+    els.chart.style.width = `${width}px`;
+    els.chart.style.height = `${height}px`;
+    els.chart.style.maxWidth = "100%";
+  } else {
+    els.chart.style.width = "";
+    els.chart.style.height = "";
+    els.chart.style.maxWidth = "";
+  }
+
+  Plotly.react(els.chart, traces, layout, { responsive, displaylogo: false });
 
   const extra = parsed.errors.length ? ` (${parsed.errors.length} linha(s) ignorada(s))` : "";
   setStatus(`Espectro gerado com ${parsed.mz.length} picos${extra}.`, "success");
@@ -180,12 +201,15 @@ function downloadPng() {
     setStatus("Gere o espectro antes de baixar.", "error");
     return;
   }
+  const width = parseInt(els.widthInput.value, 10) || 1200;
+  const height = parseInt(els.heightInput.value, 10) || 700;
+  const scale = parseFloat(els.scaleInput.value) || 2;
   Plotly.downloadImage(els.chart, {
     format: "png",
     filename: "espectro_massa",
-    width: 1200,
-    height: 700,
-    scale: 2,
+    width,
+    height,
+    scale,
   });
 }
 
@@ -213,6 +237,16 @@ els.fileInput.addEventListener("change", (e) => {
   const file = e.target.files[0];
   if (file) readFile(file);
   e.target.value = "";
+});
+
+const replotIfReady = () => {
+  if (els.chart.data) plot();
+};
+els.previewSizeInput.addEventListener("change", replotIfReady);
+[els.widthInput, els.heightInput].forEach((el) => {
+  el.addEventListener("change", () => {
+    if (els.previewSizeInput.checked) replotIfReady();
+  });
 });
 
 els.dataInput.value = EXAMPLE;
