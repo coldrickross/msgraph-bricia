@@ -25,6 +25,10 @@ const els = {
   previewSizeInput: document.getElementById("preview-size-input"),
   compareInput: document.getElementById("compare-input"),
   secondSpectrumGroup: document.getElementById("second-spectrum-group"),
+  yShowInput: document.getElementById("yshow-input"),
+  yShowInput2: document.getElementById("yshow-input-2"),
+  lockYInput: document.getElementById("lock-y-input"),
+  gapInput: document.getElementById("gap-input"),
   plotBtn: document.getElementById("plot-btn"),
   downloadBtn: document.getElementById("download-btn"),
   loadExampleBtn: document.getElementById("load-example"),
@@ -54,6 +58,10 @@ const TRANSLATIONS = {
     loadFile2: "Carregar arquivo 2 (.csv/.txt)",
     peakColor2: "Cor dos picos (2º)",
     compareSpectra: "Adicionar segundo espectro abaixo",
+    yShow: "Escala Y (%)",
+    yShow2: "Escala Y 2º (%)",
+    lockY: "Travar escalas Y dos dois espectros",
+    gapBetween: "Espaço entre espectros (%)",
     chartTitle: "Título do gráfico",
     chartTitleDefault: "Espectro de Massa",
     xLabel: "Rótulo X",
@@ -109,6 +117,10 @@ const TRANSLATIONS = {
     loadFile2: "Load file 2 (.csv/.txt)",
     peakColor2: "Peak color (2nd)",
     compareSpectra: "Add a second spectrum below",
+    yShow: "Y scale (%)",
+    yShow2: "Y scale 2nd (%)",
+    lockY: "Lock Y scales of both spectra",
+    gapBetween: "Gap between spectra (%)",
     chartTitle: "Chart title",
     chartTitleDefault: "Mass Spectrum",
     xLabel: "X label",
@@ -302,9 +314,15 @@ function plot() {
   const showGrid = els.gridInput.checked;
 
   const yMax = Math.max(...intensity);
-  const yPadding = yMax * 0.12;
   const yMax2 = hasSecond ? Math.max(...intensity2) : 0;
-  const yPadding2 = yMax2 * 0.12;
+
+  const yShowPct = Math.max(parseFloat(els.yShowInput.value) || 100, 0.1);
+  const lockY = els.lockYInput.checked;
+  const yShowPct2Raw = Math.max(parseFloat(els.yShowInput2.value) || 100, 0.1);
+  const yShowPct2 = hasSecond && lockY ? yShowPct : yShowPct2Raw;
+
+  const yAxisTop = (yShowPct / 100) * yMax * 1.12;
+  const yAxisTop2 = hasSecond ? (yShowPct2 / 100) * yMax2 * 1.12 : 0;
 
   const allMz = hasSecond ? parsed.mz.concat(parsed2.mz) : parsed.mz;
   const dataXMin = Math.min(...allMz);
@@ -362,8 +380,10 @@ function plot() {
   const decimals = parseInt(els.decimalsInput.value, 10) || 0;
 
   if (hasSecond) {
-    const topDomain = [0.54, 1.0];
-    const bottomDomain = [0.0, 0.46];
+    const gapPct = Math.min(Math.max(parseFloat(els.gapInput.value) || 0, 0), 80);
+    const half = (1 - gapPct / 100) / 2;
+    const topDomain = [1 - half, 1.0];
+    const bottomDomain = [0.0, half];
 
     layout.xaxis = {
       ...xAxisBase,
@@ -386,7 +406,7 @@ function plot() {
       ...yAxisBase,
       domain: bottomDomain,
       anchor: "x",
-      range: [0, yMax2 + yPadding2],
+      range: [0, yAxisTop2],
       title: {
         text: yLabelText,
         font: { size: fontSize, family: fontFamily, color: textColor },
@@ -396,7 +416,7 @@ function plot() {
       ...yAxisBase,
       domain: topDomain,
       anchor: "x2",
-      range: [0, yMax + yPadding],
+      range: [0, yAxisTop],
       title: {
         text: yLabelText,
         font: { size: fontSize, family: fontFamily, color: textColor },
@@ -423,7 +443,7 @@ function plot() {
     };
     layout.yaxis = {
       ...yAxisBase,
-      range: [0, yMax + yPadding],
+      range: [0, yAxisTop],
       title: {
         text: yLabelText,
         font: { size: fontSize, family: fontFamily, color: textColor },
@@ -596,6 +616,15 @@ els.fileInput2.addEventListener("change", (e) => {
 function updateCompareVisibility() {
   const on = els.compareInput.checked;
   els.secondSpectrumGroup.hidden = !on;
+  document.querySelectorAll(".compare-only").forEach((el) => {
+    el.hidden = !on;
+  });
+}
+
+function syncYShowFromLock(source) {
+  if (!els.lockYInput.checked) return;
+  const target = source === els.yShowInput ? els.yShowInput2 : els.yShowInput;
+  if (target.value !== source.value) target.value = source.value;
 }
 els.compareInput.addEventListener("change", () => {
   updateCompareVisibility();
@@ -624,8 +653,19 @@ els.previewSizeInput.addEventListener("change", replotIfReady);
   els.xMaxInput,
   els.boxInput,
   els.colorInput2,
+  els.gapInput,
 ].forEach((el) => {
   el.addEventListener("change", replotIfReady);
+});
+
+[els.yShowInput, els.yShowInput2].forEach((el) => {
+  el.addEventListener("input", () => syncYShowFromLock(el));
+  el.addEventListener("change", replotIfReady);
+});
+
+els.lockYInput.addEventListener("change", () => {
+  if (els.lockYInput.checked) els.yShowInput2.value = els.yShowInput.value;
+  replotIfReady();
 });
 
 document.querySelectorAll(".lang-btn").forEach((btn) => {

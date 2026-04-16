@@ -109,6 +109,18 @@
           <input type="checkbox" id="normalize-input" checked />
           <label for="normalize-input" data-i18n="normalize">Normalizar para pico base (100%)</label>
         </div>
+        <div class="option">
+          <label for="yshow-input" data-i18n="yShow">Escala Y (%)</label>
+          <input type="number" id="yshow-input" value="100" min="1" max="1000" step="1" />
+        </div>
+        <div class="option compare-only" hidden>
+          <label for="yshow-input-2" data-i18n="yShow2">Escala Y 2º (%)</label>
+          <input type="number" id="yshow-input-2" value="100" min="1" max="1000" step="1" />
+        </div>
+        <div class="option checkbox compare-only" hidden>
+          <input type="checkbox" id="lock-y-input" checked />
+          <label for="lock-y-input" data-i18n="lockY">Travar escalas Y dos dois espectros</label>
+        </div>
         <div class="option checkbox">
           <input type="checkbox" id="label-input" checked />
           <label for="label-input" data-i18n="labelPeaks">Rotular picos principais</label>
@@ -152,6 +164,10 @@
         <div class="option checkbox">
           <input type="checkbox" id="compare-input" />
           <label for="compare-input" data-i18n="compareSpectra">Adicionar segundo espectro abaixo</label>
+        </div>
+        <div class="option compare-only" hidden>
+          <label for="gap-input" data-i18n="gapBetween">Espaço entre espectros (%)</label>
+          <input type="number" id="gap-input" value="8" min="0" max="40" step="1" />
         </div>
       </div>
 
