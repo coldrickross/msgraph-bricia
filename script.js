@@ -58,6 +58,10 @@ const TRANSLATIONS = {
     loadFile2: "Carregar arquivo 2 (.csv/.txt)",
     peakColor2: "Cor dos picos (2º)",
     compareSpectra: "Adicionar segundo espectro abaixo",
+    tabData: "Dados",
+    tabStyle: "Estilo",
+    tabAxes: "Eixos e picos",
+    tabExport: "Exportar",
     yShow: "Escala Y (%)",
     yShow2: "Escala Y 2º (%)",
     lockY: "Travar escalas Y dos dois espectros",
@@ -117,6 +121,10 @@ const TRANSLATIONS = {
     loadFile2: "Load file 2 (.csv/.txt)",
     peakColor2: "Peak color (2nd)",
     compareSpectra: "Add a second spectrum below",
+    tabData: "Data",
+    tabStyle: "Style",
+    tabAxes: "Axes & peaks",
+    tabExport: "Export",
     yShow: "Y scale (%)",
     yShow2: "Y scale 2nd (%)",
     lockY: "Lock Y scales of both spectra",
@@ -165,30 +173,39 @@ const TRANSLATIONS = {
 let currentLang = "pt-BR";
 const t = () => TRANSLATIONS[currentLang];
 
-const EXAMPLE = `50.1, 12
-51.1, 18
-52.1, 8
-63.0, 22
-65.0, 35
-77.0, 68
-78.1, 15
-91.1, 100
-92.1, 45
-105.0, 38
-106.1, 14
-120.2, 55
-121.2, 9`;
+const EXAMPLE = `229.171734 5.021981
+243.188475 105.326878
+244.117278 251.218299
+245.227142 0.385001
+255.190948 0.416775
+256.227004 18.092581
+257.222294 15.703728
+261.054260 0.302891
+273.014587 0.749061
+285.492096 0.272926
+286.124329 0.344009
+287.213196 0.452914
+294.818176 0.843925
+311.291504 0.452673
+315.236938 0.417173
+323.233414 12.090869
+327.976692 13.618586
+341.297180 24.572100
+359.166493 13.360824
+360.214929 2.160940
+377.124113 29806.880534
+377.728163 32.063554
+393.805817 0.586843
+405.025543 0.350309
+421.386128 1.761244
+435.328491 0.417305`;
 
-const EXAMPLE_2 = `51.0, 9
-65.1, 28
-77.1, 52
-78.0, 12
-91.0, 74
-92.0, 30
-104.1, 18
-119.1, 100
-120.1, 42
-134.1, 25`;
+const EXAMPLE_2 = `359.585052 1.793388
+377.118828 37326.226888
+377.699767 32.192844
+394.570923 1.128782
+396.087158 6.391528
+421.711910 3.275671`;
 
 function setStatus(message, type = "") {
   els.status.textContent = message;
@@ -670,6 +687,22 @@ els.lockYInput.addEventListener("change", () => {
 
 document.querySelectorAll(".lang-btn").forEach((btn) => {
   btn.addEventListener("click", () => applyLanguage(btn.dataset.lang));
+});
+
+function activateTab(name) {
+  document.querySelectorAll(".tab").forEach((b) => {
+    b.classList.toggle("active", b.dataset.tab === name);
+  });
+  document.querySelectorAll(".tab-panel").forEach((p) => {
+    p.hidden = p.dataset.panel !== name;
+  });
+  if (els.chart && els.chart.data && window.Plotly) {
+    Plotly.Plots.resize(els.chart);
+  }
+}
+
+document.querySelectorAll(".tab").forEach((btn) => {
+  btn.addEventListener("click", () => activateTab(btn.dataset.tab));
 });
 
 let initialLang = "pt-BR";

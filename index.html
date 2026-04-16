@@ -23,151 +23,175 @@
 
   <main>
     <section class="controls">
-      <div class="input-group">
-        <label for="data-input" data-i18n="dataLabel">Dados (m/z, intensidade)</label>
-        <textarea id="data-input" rows="12" data-i18n-placeholder="dataPlaceholder" placeholder="Um par por linha. Separadores aceitos: vírgula, ponto e vírgula, tab ou espaço.&#10;&#10;Exemplo:&#10;50.1, 12&#10;77.0, 45&#10;91.1, 100&#10;105.0, 38&#10;120.2, 8"></textarea>
-        <div class="button-row">
-          <button id="load-example" type="button" data-i18n="loadExample">Carregar exemplo</button>
-          <button id="clear-data" type="button" class="secondary" data-i18n="clear">Limpar</button>
-          <label class="file-button" data-i18n="loadFile">
-            Carregar arquivo (.csv/.txt)
-            <input type="file" id="file-input" accept=".csv,.txt,.tsv" hidden />
-          </label>
-        </div>
+      <div class="tabs" role="tablist">
+        <button type="button" class="tab active" data-tab="data" role="tab" data-i18n="tabData">Dados</button>
+        <button type="button" class="tab" data-tab="style" role="tab" data-i18n="tabStyle">Estilo</button>
+        <button type="button" class="tab" data-tab="axes" role="tab" data-i18n="tabAxes">Eixos e picos</button>
+        <button type="button" class="tab" data-tab="export" role="tab" data-i18n="tabExport">Exportar</button>
       </div>
 
-      <div class="input-group second-spectrum" id="second-spectrum-group" hidden>
-        <label for="data-input-2" data-i18n="dataLabel2">Dados do segundo espectro (m/z, intensidade)</label>
-        <textarea id="data-input-2" rows="10" data-i18n-placeholder="dataPlaceholder" placeholder="Um par por linha. Separadores aceitos: vírgula, ponto e vírgula, tab ou espaço."></textarea>
-        <div class="button-row">
-          <button id="load-example-2" type="button" data-i18n="loadExample2">Carregar exemplo 2</button>
-          <button id="clear-data-2" type="button" class="secondary" data-i18n="clear2">Limpar 2</button>
-          <label class="file-button" data-i18n="loadFile2">
-            Carregar arquivo 2 (.csv/.txt)
-            <input type="file" id="file-input-2" accept=".csv,.txt,.tsv" hidden />
-          </label>
-        </div>
-      </div>
+      <div class="tab-panels">
+        <div class="tab-panel active" data-panel="data">
+          <div class="option checkbox compare-toggle">
+            <input type="checkbox" id="compare-input" />
+            <label for="compare-input" data-i18n="compareSpectra">Adicionar segundo espectro abaixo</label>
+          </div>
 
-      <div class="options-group">
-        <div class="option">
-          <label for="title-input" data-i18n="chartTitle">Título do gráfico</label>
-          <input type="text" id="title-input" value="Espectro de Massa" data-i18n-value="chartTitleDefault" />
+          <div class="input-group">
+            <label for="data-input" data-i18n="dataLabel">Dados (m/z, intensidade)</label>
+            <textarea id="data-input" rows="10" data-i18n-placeholder="dataPlaceholder" placeholder="Um par por linha. Separadores aceitos: vírgula, ponto e vírgula, tab ou espaço.&#10;&#10;Exemplo:&#10;50.1, 12&#10;77.0, 45&#10;91.1, 100&#10;105.0, 38&#10;120.2, 8"></textarea>
+            <div class="button-row">
+              <button id="load-example" type="button" data-i18n="loadExample">Carregar exemplo</button>
+              <button id="clear-data" type="button" class="secondary" data-i18n="clear">Limpar</button>
+              <label class="file-button" data-i18n="loadFile">
+                Carregar arquivo (.csv/.txt)
+                <input type="file" id="file-input" accept=".csv,.txt,.tsv" hidden />
+              </label>
+            </div>
+          </div>
+
+          <div class="input-group second-spectrum" id="second-spectrum-group" hidden>
+            <label for="data-input-2" data-i18n="dataLabel2">Dados do segundo espectro (m/z, intensidade)</label>
+            <textarea id="data-input-2" rows="8" data-i18n-placeholder="dataPlaceholder" placeholder="Um par por linha. Separadores aceitos: vírgula, ponto e vírgula, tab ou espaço."></textarea>
+            <div class="button-row">
+              <button id="load-example-2" type="button" data-i18n="loadExample2">Carregar exemplo 2</button>
+              <button id="clear-data-2" type="button" class="secondary" data-i18n="clear2">Limpar 2</button>
+              <label class="file-button" data-i18n="loadFile2">
+                Carregar arquivo 2 (.csv/.txt)
+                <input type="file" id="file-input-2" accept=".csv,.txt,.tsv" hidden />
+              </label>
+            </div>
+          </div>
         </div>
-        <div class="option">
-          <label for="xlabel-input" data-i18n="xLabel">Rótulo X</label>
-          <input type="text" id="xlabel-input" value="m/z" />
+
+        <div class="tab-panel" data-panel="style" hidden>
+          <div class="options-group">
+            <div class="option full">
+              <label for="title-input" data-i18n="chartTitle">Título do gráfico</label>
+              <input type="text" id="title-input" value="Espectro de Massa" data-i18n-value="chartTitleDefault" />
+            </div>
+            <div class="option">
+              <label for="xlabel-input" data-i18n="xLabel">Rótulo X</label>
+              <input type="text" id="xlabel-input" value="m/z" />
+            </div>
+            <div class="option">
+              <label for="ylabel-input" data-i18n="yLabel">Rótulo Y</label>
+              <input type="text" id="ylabel-input" value="Intensidade relativa (%)" data-i18n-value="yLabelDefault" />
+            </div>
+            <div class="option">
+              <label for="color-input" data-i18n="peakColor">Cor dos picos</label>
+              <input type="color" id="color-input" value="#1f4e8b" />
+            </div>
+            <div class="option">
+              <label for="color-input-2" data-i18n="peakColor2">Cor dos picos (2º)</label>
+              <input type="color" id="color-input-2" value="#c94e4e" />
+            </div>
+            <div class="option">
+              <label for="bgcolor-input" data-i18n="bgColor">Cor de fundo</label>
+              <input type="color" id="bgcolor-input" value="#ffffff" />
+            </div>
+            <div class="option">
+              <label for="textcolor-input" data-i18n="textColor">Cor do texto</label>
+              <input type="color" id="textcolor-input" value="#1c2430" />
+            </div>
+            <div class="option">
+              <label for="gridcolor-input" data-i18n="gridColor">Cor da grade</label>
+              <input type="color" id="gridcolor-input" value="#eceff3" />
+            </div>
+            <div class="option">
+              <label for="font-family-input" data-i18n="fontFamily">Fonte</label>
+              <select id="font-family-input">
+                <option value="Arial, Helvetica, sans-serif">Arial</option>
+                <option value="Helvetica, Arial, sans-serif">Helvetica</option>
+                <option value="'Times New Roman', Times, serif">Times New Roman</option>
+                <option value="Georgia, serif">Georgia</option>
+                <option value="'Courier New', Courier, monospace">Courier New</option>
+                <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
+                <option value="Verdana, Geneva, sans-serif">Verdana</option>
+                <option value="Tahoma, Geneva, sans-serif">Tahoma</option>
+                <option value="'Comic Sans MS', cursive">Comic Sans MS</option>
+                <option value="'Lucida Console', Monaco, monospace">Lucida Console</option>
+              </select>
+            </div>
+            <div class="option">
+              <label for="font-size-input" data-i18n="fontSize">Tamanho da fonte (px)</label>
+              <input type="number" id="font-size-input" value="14" min="6" max="48" step="1" />
+            </div>
+            <div class="option checkbox">
+              <input type="checkbox" id="grid-input" checked />
+              <label for="grid-input" data-i18n="showGrid">Mostrar grade</label>
+            </div>
+            <div class="option checkbox">
+              <input type="checkbox" id="box-input" />
+              <label for="box-input" data-i18n="closeBox">Fechar caixa do gráfico</label>
+            </div>
+          </div>
         </div>
-        <div class="option">
-          <label for="ylabel-input" data-i18n="yLabel">Rótulo Y</label>
-          <input type="text" id="ylabel-input" value="Intensidade relativa (%)" data-i18n-value="yLabelDefault" />
+
+        <div class="tab-panel" data-panel="axes" hidden>
+          <div class="options-group">
+            <div class="option checkbox">
+              <input type="checkbox" id="normalize-input" checked />
+              <label for="normalize-input" data-i18n="normalize">Normalizar para pico base (100%)</label>
+            </div>
+            <div class="option">
+              <label for="yshow-input" data-i18n="yShow">Escala Y (%)</label>
+              <input type="number" id="yshow-input" value="100" min="1" max="1000" step="1" />
+            </div>
+            <div class="option compare-only" hidden>
+              <label for="yshow-input-2" data-i18n="yShow2">Escala Y 2º (%)</label>
+              <input type="number" id="yshow-input-2" value="100" min="1" max="1000" step="1" />
+            </div>
+            <div class="option checkbox compare-only" hidden>
+              <input type="checkbox" id="lock-y-input" checked />
+              <label for="lock-y-input" data-i18n="lockY">Travar escalas Y dos dois espectros</label>
+            </div>
+            <div class="option checkbox">
+              <input type="checkbox" id="label-input" checked />
+              <label for="label-input" data-i18n="labelPeaks">Rotular picos principais</label>
+            </div>
+            <div class="option">
+              <label for="threshold-input" data-i18n="threshold">Limite para rótulos (%)</label>
+              <input type="number" id="threshold-input" value="10" min="0" max="100" step="1" />
+            </div>
+            <div class="option">
+              <label for="decimals-input" data-i18n="decimals">Casas decimais do m/z</label>
+              <input type="number" id="decimals-input" value="1" min="0" max="4" step="1" />
+            </div>
+            <div class="option">
+              <label for="xmin-input" data-i18n="xMin">m/z mínimo (auto se vazio)</label>
+              <input type="number" id="xmin-input" step="any" placeholder="auto" />
+            </div>
+            <div class="option">
+              <label for="xmax-input" data-i18n="xMax">m/z máximo (auto se vazio)</label>
+              <input type="number" id="xmax-input" step="any" placeholder="auto" />
+            </div>
+            <div class="option compare-only" hidden>
+              <label for="gap-input" data-i18n="gapBetween">Espaço entre espectros (%)</label>
+              <input type="number" id="gap-input" value="8" min="0" max="40" step="1" />
+            </div>
+          </div>
         </div>
-        <div class="option">
-          <label for="color-input" data-i18n="peakColor">Cor dos picos</label>
-          <input type="color" id="color-input" value="#1f4e8b" />
-        </div>
-        <div class="option">
-          <label for="color-input-2" data-i18n="peakColor2">Cor dos picos (2º)</label>
-          <input type="color" id="color-input-2" value="#c94e4e" />
-        </div>
-        <div class="option">
-          <label for="bgcolor-input" data-i18n="bgColor">Cor de fundo</label>
-          <input type="color" id="bgcolor-input" value="#ffffff" />
-        </div>
-        <div class="option">
-          <label for="textcolor-input" data-i18n="textColor">Cor do texto</label>
-          <input type="color" id="textcolor-input" value="#1c2430" />
-        </div>
-        <div class="option">
-          <label for="gridcolor-input" data-i18n="gridColor">Cor da grade</label>
-          <input type="color" id="gridcolor-input" value="#eceff3" />
-        </div>
-        <div class="option">
-          <label for="font-family-input" data-i18n="fontFamily">Fonte</label>
-          <select id="font-family-input">
-            <option value="Arial, Helvetica, sans-serif">Arial</option>
-            <option value="Helvetica, Arial, sans-serif">Helvetica</option>
-            <option value="'Times New Roman', Times, serif">Times New Roman</option>
-            <option value="Georgia, serif">Georgia</option>
-            <option value="'Courier New', Courier, monospace">Courier New</option>
-            <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
-            <option value="Verdana, Geneva, sans-serif">Verdana</option>
-            <option value="Tahoma, Geneva, sans-serif">Tahoma</option>
-            <option value="'Comic Sans MS', cursive">Comic Sans MS</option>
-            <option value="'Lucida Console', Monaco, monospace">Lucida Console</option>
-          </select>
-        </div>
-        <div class="option">
-          <label for="font-size-input" data-i18n="fontSize">Tamanho da fonte (px)</label>
-          <input type="number" id="font-size-input" value="14" min="6" max="48" step="1" />
-        </div>
-        <div class="option checkbox">
-          <input type="checkbox" id="grid-input" checked />
-          <label for="grid-input" data-i18n="showGrid">Mostrar grade</label>
-        </div>
-        <div class="option checkbox">
-          <input type="checkbox" id="normalize-input" checked />
-          <label for="normalize-input" data-i18n="normalize">Normalizar para pico base (100%)</label>
-        </div>
-        <div class="option">
-          <label for="yshow-input" data-i18n="yShow">Escala Y (%)</label>
-          <input type="number" id="yshow-input" value="100" min="1" max="1000" step="1" />
-        </div>
-        <div class="option compare-only" hidden>
-          <label for="yshow-input-2" data-i18n="yShow2">Escala Y 2º (%)</label>
-          <input type="number" id="yshow-input-2" value="100" min="1" max="1000" step="1" />
-        </div>
-        <div class="option checkbox compare-only" hidden>
-          <input type="checkbox" id="lock-y-input" checked />
-          <label for="lock-y-input" data-i18n="lockY">Travar escalas Y dos dois espectros</label>
-        </div>
-        <div class="option checkbox">
-          <input type="checkbox" id="label-input" checked />
-          <label for="label-input" data-i18n="labelPeaks">Rotular picos principais</label>
-        </div>
-        <div class="option">
-          <label for="threshold-input" data-i18n="threshold">Limite para rótulos (%)</label>
-          <input type="number" id="threshold-input" value="10" min="0" max="100" step="1" />
-        </div>
-        <div class="option">
-          <label for="decimals-input" data-i18n="decimals">Casas decimais do m/z</label>
-          <input type="number" id="decimals-input" value="1" min="0" max="4" step="1" />
-        </div>
-        <div class="option">
-          <label for="xmin-input" data-i18n="xMin">m/z mínimo (auto se vazio)</label>
-          <input type="number" id="xmin-input" step="any" placeholder="auto" />
-        </div>
-        <div class="option">
-          <label for="xmax-input" data-i18n="xMax">m/z máximo (auto se vazio)</label>
-          <input type="number" id="xmax-input" step="any" placeholder="auto" />
-        </div>
-        <div class="option checkbox">
-          <input type="checkbox" id="box-input" />
-          <label for="box-input" data-i18n="closeBox">Fechar caixa do gráfico</label>
-        </div>
-        <div class="option">
-          <label for="width-input" data-i18n="width">Largura (px)</label>
-          <input type="number" id="width-input" value="1200" min="200" max="8000" step="10" />
-        </div>
-        <div class="option">
-          <label for="height-input" data-i18n="height">Altura (px)</label>
-          <input type="number" id="height-input" value="700" min="200" max="8000" step="10" />
-        </div>
-        <div class="option">
-          <label for="scale-input" data-i18n="scale">Escala (DPI)</label>
-          <input type="number" id="scale-input" value="2" min="1" max="6" step="1" />
-        </div>
-        <div class="option checkbox">
-          <input type="checkbox" id="preview-size-input" />
-          <label for="preview-size-input" data-i18n="previewSize">Visualizar no tamanho de exportação</label>
-        </div>
-        <div class="option checkbox">
-          <input type="checkbox" id="compare-input" />
-          <label for="compare-input" data-i18n="compareSpectra">Adicionar segundo espectro abaixo</label>
-        </div>
-        <div class="option compare-only" hidden>
-          <label for="gap-input" data-i18n="gapBetween">Espaço entre espectros (%)</label>
-          <input type="number" id="gap-input" value="8" min="0" max="40" step="1" />
+
+        <div class="tab-panel" data-panel="export" hidden>
+          <div class="options-group">
+            <div class="option">
+              <label for="width-input" data-i18n="width">Largura (px)</label>
+              <input type="number" id="width-input" value="1200" min="200" max="8000" step="10" />
+            </div>
+            <div class="option">
+              <label for="height-input" data-i18n="height">Altura (px)</label>
+              <input type="number" id="height-input" value="700" min="200" max="8000" step="10" />
+            </div>
+            <div class="option">
+              <label for="scale-input" data-i18n="scale">Escala (DPI)</label>
+              <input type="number" id="scale-input" value="2" min="1" max="6" step="1" />
+            </div>
+            <div class="option checkbox">
+              <input type="checkbox" id="preview-size-input" />
+              <label for="preview-size-input" data-i18n="previewSize">Visualizar no tamanho de exportação</label>
+            </div>
+          </div>
         </div>
       </div>
 
