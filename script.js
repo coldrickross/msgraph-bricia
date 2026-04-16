@@ -383,13 +383,31 @@ function buildManualAnnotations(mz, intensity, selectedSet, autoSet, decimals, f
     }));
 }
 
-function avoidStemCollisions(annotations, mz, intensity, xMin, xMax, plotWidthPx, fontSize) {
+function avoidStemCollisions(
+  annotations,
+  mz,
+  intensity,
+  xMin,
+  xMax,
+  plotWidthPx,
+  fontSize,
+  yAxisTop,
+  panelHeightPx,
+  hasCeiling
+) {
   if (!annotations || !annotations.length) return;
   if (!Number.isFinite(plotWidthPx) || plotWidthPx <= 0) return;
   const xRange = xMax - xMin;
   if (!Number.isFinite(xRange) || xRange <= 0) return;
   const pxPerData = plotWidthPx / xRange;
   const epsilon = 1e-9;
+
+  const canCheckCeiling =
+    hasCeiling === true &&
+    Number.isFinite(yAxisTop) &&
+    yAxisTop > 0 &&
+    Number.isFinite(panelHeightPx) &&
+    panelHeightPx > 0;
 
   for (const ann of annotations) {
     const m = ann.x;
@@ -410,19 +428,26 @@ function avoidStemCollisions(annotations, mz, intensity, xMin, xMax, plotWidthPx
       if (leftHit && rightHit) break;
     }
 
-    if (!leftHit && !rightHit) continue;
-    if (rightHit && !leftHit) {
-      ann.xanchor = "right";
-      ann.xshift = -4;
-      ann.yshift = 2;
-    } else if (leftHit && !rightHit) {
-      ann.xanchor = "left";
-      ann.xshift = 4;
-      ann.yshift = 2;
-    } else {
-      ann.xanchor = "left";
-      ann.xshift = 4;
-      ann.yshift = 2;
+    if (leftHit || rightHit) {
+      if (rightHit && !leftHit) {
+        ann.xanchor = "right";
+        ann.xshift = -4;
+        ann.yshift = 2;
+      } else {
+        ann.xanchor = "left";
+        ann.xshift = 4;
+        ann.yshift = 2;
+      }
+    }
+
+    if (canCheckCeiling) {
+      const currentYShift = ann.yshift != null ? ann.yshift : 0;
+      const peakTopPx = (i / yAxisTop) * panelHeightPx;
+      const labelTopPx = peakTopPx + currentYShift + fontSize / 2;
+      if (labelTopPx > panelHeightPx) {
+        ann.yshift = -2;
+        ann.yanchor = "top";
+      }
     }
   }
 }
@@ -541,12 +566,19 @@ function plot() {
   const exportHeight = parseInt(els.heightInput.value, 10);
   const previewAtExportSize = els.previewSizeInput.checked;
   let chartPxWidth;
+  let chartPxHeight;
   if (previewAtExportSize && exportWidth > 0) {
     chartPxWidth = exportWidth;
   } else {
     chartPxWidth = els.chart.clientWidth || els.chart.offsetWidth || 700;
   }
+  if (previewAtExportSize && exportHeight > 0) {
+    chartPxHeight = exportHeight;
+  } else {
+    chartPxHeight = els.chart.clientHeight || els.chart.offsetHeight || 500;
+  }
   const plotWidthPx = Math.max(50, chartPxWidth - (layout.margin.l || 0) - (layout.margin.r || 0));
+  const plotHeightPx = Math.max(50, chartPxHeight - (layout.margin.t || 0) - (layout.margin.b || 0));
 
   pruneSelection(selectedMz1, parsed.mz);
   if (compareEnabled) pruneSelection(selectedMz2, parsed2.mz);
@@ -597,12 +629,14 @@ function plot() {
       domain: middleDomain,
       anchor: "x2",
       range: [0, yAxisTop2],
+      zeroline: false,
     };
     layout.yaxis3 = {
       ...yAxisBase,
       domain: topDomain,
       anchor: "x3",
       range: [0, yAxisTop],
+      zeroline: false,
     };
     annotations.push(makeSharedYLabel(yLabelText, fontSize, fontFamily, textColor, layout.margin));
 
@@ -637,9 +671,12 @@ function plot() {
     annos3 = annos3.concat(
       buildManualAnnotations(parsed3.mz, intensity3, selectedMz3, autoSet3, decimals, fontSize, fontFamily, textColor, "x", "y")
     );
-    avoidStemCollisions(annos1, parsed.mz, intensity, xMin, xMax, plotWidthPx, fontSize);
-    avoidStemCollisions(annos2, parsed2.mz, intensity2, xMin, xMax, plotWidthPx, fontSize);
-    avoidStemCollisions(annos3, parsed3.mz, intensity3, xMin, xMax, plotWidthPx, fontSize);
+    const topPanelHeightPx = plotHeightPx * (topDomain[1] - topDomain[0]);
+    const middlePanelHeightPx = plotHeightPx * (middleDomain[1] - middleDomain[0]);
+    const bottomPanelHeightPx = plotHeightPx * (bottomDomain[1] - bottomDomain[0]);
+    avoidStemCollisions(annos1, parsed.mz, intensity, xMin, xMax, plotWidthPx, fontSize, yAxisTop, topPanelHeightPx, false);
+    avoidStemCollisions(annos2, parsed2.mz, intensity2, xMin, xMax, plotWidthPx, fontSize, yAxisTop2, middlePanelHeightPx, true);
+    avoidStemCollisions(annos3, parsed3.mz, intensity3, xMin, xMax, plotWidthPx, fontSize, yAxisTop3, bottomPanelHeightPx, true);
     annotations = annotations.concat(annos1, annos2, annos3);
   } else if (hasSecond) {
     const gapPct = Math.min(Math.max(parseFloat(els.gapInput.value) || 0, 0), 80);
@@ -675,6 +712,7 @@ function plot() {
       domain: topDomain,
       anchor: "x2",
       range: [0, yAxisTop],
+      zeroline: false,
     };
     annotations.push(makeSharedYLabel(yLabelText, fontSize, fontFamily, textColor, layout.margin));
 
@@ -700,8 +738,10 @@ function plot() {
     annos2 = annos2.concat(
       buildManualAnnotations(parsed2.mz, intensity2, selectedMz2, autoSet2, decimals, fontSize, fontFamily, textColor, "x", "y")
     );
-    avoidStemCollisions(annos1, parsed.mz, intensity, xMin, xMax, plotWidthPx, fontSize);
-    avoidStemCollisions(annos2, parsed2.mz, intensity2, xMin, xMax, plotWidthPx, fontSize);
+    const topPanelHeightPx = plotHeightPx * (topDomain[1] - topDomain[0]);
+    const bottomPanelHeightPx = plotHeightPx * (bottomDomain[1] - bottomDomain[0]);
+    avoidStemCollisions(annos1, parsed.mz, intensity, xMin, xMax, plotWidthPx, fontSize, yAxisTop, topPanelHeightPx, false);
+    avoidStemCollisions(annos2, parsed2.mz, intensity2, xMin, xMax, plotWidthPx, fontSize, yAxisTop2, bottomPanelHeightPx, true);
     annotations = annotations.concat(annos1, annos2);
   } else {
     layout.xaxis = {
@@ -732,7 +772,7 @@ function plot() {
     annos1 = annos1.concat(
       buildManualAnnotations(parsed.mz, intensity, selectedMz1, autoSet1, decimals, fontSize, fontFamily, textColor, "x", "y")
     );
-    avoidStemCollisions(annos1, parsed.mz, intensity, xMin, xMax, plotWidthPx, fontSize);
+    avoidStemCollisions(annos1, parsed.mz, intensity, xMin, xMax, plotWidthPx, fontSize, yAxisTop, plotHeightPx, false);
     annotations = annotations.concat(annos1);
   }
 
