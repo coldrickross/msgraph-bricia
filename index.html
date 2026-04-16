@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gerador de Espectro de Massa</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+</head>
+<body>
+  <header>
+    <h1>Gerador de Espectro de Massa</h1>
+    <p class="subtitle">Insira uma lista de valores m/z e intensidade para gerar o espectro</p>
+  </header>
+
+  <main>
+    <section class="controls">
+      <div class="input-group">
+        <label for="data-input">Dados (m/z, intensidade)</label>
+        <textarea id="data-input" rows="12" placeholder="Um par por linha. Separadores aceitos: vírgula, ponto e vírgula, tab ou espaço.&#10;&#10;Exemplo:&#10;50.1, 12&#10;77.0, 45&#10;91.1, 100&#10;105.0, 38&#10;120.2, 8"></textarea>
+        <div class="button-row">
+          <button id="load-example" type="button">Carregar exemplo</button>
+          <button id="clear-data" type="button" class="secondary">Limpar</button>
+          <label class="file-button">
+            Carregar arquivo (.csv/.txt)
+            <input type="file" id="file-input" accept=".csv,.txt,.tsv" hidden />
+          </label>
+        </div>
+      </div>
+
+      <div class="options-group">
+        <div class="option">
+          <label for="title-input">Título do gráfico</label>
+          <input type="text" id="title-input" value="Espectro de Massa" />
+        </div>
+        <div class="option">
+          <label for="xlabel-input">Rótulo X</label>
+          <input type="text" id="xlabel-input" value="m/z" />
+        </div>
+        <div class="option">
+          <label for="ylabel-input">Rótulo Y</label>
+          <input type="text" id="ylabel-input" value="Intensidade relativa (%)" />
+        </div>
+        <div class="option">
+          <label for="color-input">Cor dos picos</label>
+          <input type="color" id="color-input" value="#1f4e8b" />
+        </div>
+        <div class="option checkbox">
+          <input type="checkbox" id="normalize-input" checked />
+          <label for="normalize-input">Normalizar para pico base (100%)</label>
+        </div>
+        <div class="option checkbox">
+          <input type="checkbox" id="label-input" checked />
+          <label for="label-input">Rotular picos principais</label>
+        </div>
+        <div class="option">
+          <label for="threshold-input">Limite para rótulos (%)</label>
+          <input type="number" id="threshold-input" value="10" min="0" max="100" step="1" />
+        </div>
+        <div class="option">
+          <label for="decimals-input">Casas decimais do m/z</label>
+          <input type="number" id="decimals-input" value="1" min="0" max="4" step="1" />
+        </div>
+      </div>
+
+      <div class="action-row">
+        <button id="plot-btn" type="button" class="primary">Gerar espectro</button>
+        <button id="download-btn" type="button">Baixar PNG</button>
+      </div>
+      <div id="status" class="status" role="status" aria-live="polite"></div>
+    </section>
+
+    <section class="chart-area">
+      <div id="chart"></div>
+    </section>
+  </main>
+
+  <footer>
+    <small>Feito com Plotly.js &middot; Todos os cálculos rodam no navegador</small>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
