@@ -19,6 +19,7 @@ const els = {
   xMinInput: document.getElementById("xmin-input"),
   xMaxInput: document.getElementById("xmax-input"),
   boxInput: document.getElementById("box-input"),
+  peakMarkerInput: document.getElementById("peak-marker-input"),
   widthInput: document.getElementById("width-input"),
   heightInput: document.getElementById("height-input"),
   scaleInput: document.getElementById("scale-input"),
@@ -78,6 +79,7 @@ const TRANSLATIONS = {
     fontFamily: "Fonte",
     fontSize: "Tamanho da fonte (px)",
     showGrid: "Mostrar grade",
+    showPeakMarkers: "Mostrar bolinha na ponta do pico",
     normalize: "Normalizar para pico base (100%)",
     labelPeaks: "Rotular picos principais",
     threshold: "Limite para rótulos (%)",
@@ -141,6 +143,7 @@ const TRANSLATIONS = {
     fontFamily: "Font",
     fontSize: "Font size (px)",
     showGrid: "Show grid",
+    showPeakMarkers: "Show dot at peak tip",
     normalize: "Normalize to base peak (100%)",
     labelPeaks: "Label main peaks",
     threshold: "Label threshold (%)",
@@ -247,7 +250,7 @@ function parseData(text) {
   return { mz, intensity, errors };
 }
 
-function buildStemTraces(mz, intensity, color, xaxisRef = "x", yaxisRef = "y") {
+function buildStemTraces(mz, intensity, color, xaxisRef = "x", yaxisRef = "y", showMarkers = true) {
   const xs = [];
   const ys = [];
   mz.forEach((m, idx) => {
@@ -274,7 +277,9 @@ function buildStemTraces(mz, intensity, color, xaxisRef = "x", yaxisRef = "y") {
     y: intensity,
     xaxis: xaxisRef,
     yaxis: yaxisRef,
-    marker: { color, size: 6, symbol: "circle" },
+    marker: showMarkers
+      ? { color, size: 6, symbol: "circle" }
+      : { color, size: 0.1, opacity: 0 },
     hovertemplate: `m/z: %{x}<br>${t().hoverIntensity}: %{y:.2f}<extra></extra>`,
     showlegend: false,
   };
@@ -329,6 +334,7 @@ function plot() {
   const fontFamily = els.fontFamilyInput.value;
   const fontSize = parseInt(els.fontSizeInput.value, 10) || 14;
   const showGrid = els.gridInput.checked;
+  const showPeakMarkers = els.peakMarkerInput.checked;
 
   const yMax = Math.max(...intensity);
   const yMax2 = hasSecond ? Math.max(...intensity2) : 0;
@@ -440,8 +446,8 @@ function plot() {
       },
     };
 
-    const topTraces = buildStemTraces(parsed.mz, intensity, color, "x2", "y2");
-    const bottomTraces = buildStemTraces(parsed2.mz, intensity2, color2, "x", "y");
+    const topTraces = buildStemTraces(parsed.mz, intensity, color, "x2", "y2", showPeakMarkers);
+    const bottomTraces = buildStemTraces(parsed2.mz, intensity2, color2, "x", "y", showPeakMarkers);
     traces = topTraces.concat(bottomTraces);
 
     if (els.labelInput.checked) {
@@ -467,7 +473,7 @@ function plot() {
       },
     };
 
-    traces = buildStemTraces(parsed.mz, intensity, color);
+    traces = buildStemTraces(parsed.mz, intensity, color, "x", "y", showPeakMarkers);
 
     if (els.labelInput.checked) {
       annotations = buildAnnotations(parsed.mz, intensity, threshold, decimals, fontSize, fontFamily, textColor);
@@ -671,6 +677,7 @@ els.previewSizeInput.addEventListener("change", replotIfReady);
   els.boxInput,
   els.colorInput2,
   els.gapInput,
+  els.peakMarkerInput,
 ].forEach((el) => {
   el.addEventListener("change", replotIfReady);
 });
