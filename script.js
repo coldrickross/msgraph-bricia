@@ -21,6 +21,92 @@ const els = {
   chart: document.getElementById("chart"),
 };
 
+const TRANSLATIONS = {
+  "pt-BR": {
+    pageTitle: "Gerador de Espectro de Massa",
+    title: "Gerador de Espectro de Massa",
+    subtitle: "Insira uma lista de valores m/z e intensidade para gerar o espectro",
+    dataLabel: "Dados (m/z, intensidade)",
+    dataPlaceholder:
+      "Um par por linha. Separadores aceitos: vírgula, ponto e vírgula, tab ou espaço.\n\nExemplo:\n50.1, 12\n77.0, 45\n91.1, 100\n105.0, 38\n120.2, 8",
+    loadExample: "Carregar exemplo",
+    clear: "Limpar",
+    loadFile: "Carregar arquivo (.csv/.txt)",
+    chartTitle: "Título do gráfico",
+    chartTitleDefault: "Espectro de Massa",
+    xLabel: "Rótulo X",
+    yLabel: "Rótulo Y",
+    yLabelDefault: "Intensidade relativa (%)",
+    peakColor: "Cor dos picos",
+    normalize: "Normalizar para pico base (100%)",
+    labelPeaks: "Rotular picos principais",
+    threshold: "Limite para rótulos (%)",
+    decimals: "Casas decimais do m/z",
+    width: "Largura (px)",
+    height: "Altura (px)",
+    scale: "Escala (DPI)",
+    previewSize: "Visualizar no tamanho de exportação",
+    generate: "Gerar espectro",
+    downloadPng: "Baixar PNG",
+    footer: "Feito com Plotly.js \u00b7 Todos os cálculos rodam no navegador",
+    hoverIntensity: "Intensidade",
+    statusNoData: "Nenhum dado válido encontrado. Verifique o formato.",
+    statusGenerated: (n, extra) => `Espectro gerado com ${n} picos${extra}.`,
+    statusLinesIgnored: (n) => ` (${n} linha(s) ignorada(s))`,
+    statusPlotFirst: "Gere o espectro antes de baixar.",
+    statusFileLoaded: (name) => `Arquivo "${name}" carregado.`,
+    statusFileError: "Erro ao ler o arquivo.",
+    statusExampleLoaded: "Exemplo carregado. Clique em Gerar espectro.",
+    errLineValues: (n) => `Linha ${n}: são necessários 2 valores.`,
+    errLineInvalid: (n, a, b) => `Linha ${n}: valores inválidos "${a}, ${b}".`,
+    errLineNegative: (n) => `Linha ${n}: intensidade negativa ignorada.`,
+    filename: "espectro_massa",
+  },
+  en: {
+    pageTitle: "Mass Spectrum Generator",
+    title: "Mass Spectrum Generator",
+    subtitle: "Enter a list of m/z and intensity values to generate the spectrum",
+    dataLabel: "Data (m/z, intensity)",
+    dataPlaceholder:
+      "One pair per line. Accepted separators: comma, semicolon, tab or space.\n\nExample:\n50.1, 12\n77.0, 45\n91.1, 100\n105.0, 38\n120.2, 8",
+    loadExample: "Load example",
+    clear: "Clear",
+    loadFile: "Load file (.csv/.txt)",
+    chartTitle: "Chart title",
+    chartTitleDefault: "Mass Spectrum",
+    xLabel: "X label",
+    yLabel: "Y label",
+    yLabelDefault: "Relative intensity (%)",
+    peakColor: "Peak color",
+    normalize: "Normalize to base peak (100%)",
+    labelPeaks: "Label main peaks",
+    threshold: "Label threshold (%)",
+    decimals: "m/z decimal places",
+    width: "Width (px)",
+    height: "Height (px)",
+    scale: "Scale (DPI)",
+    previewSize: "Preview at export size",
+    generate: "Generate spectrum",
+    downloadPng: "Download PNG",
+    footer: "Made with Plotly.js \u00b7 All calculations run in the browser",
+    hoverIntensity: "Intensity",
+    statusNoData: "No valid data found. Check the format.",
+    statusGenerated: (n, extra) => `Spectrum generated with ${n} peaks${extra}.`,
+    statusLinesIgnored: (n) => ` (${n} line(s) ignored)`,
+    statusPlotFirst: "Generate the spectrum before downloading.",
+    statusFileLoaded: (name) => `File "${name}" loaded.`,
+    statusFileError: "Error reading the file.",
+    statusExampleLoaded: "Example loaded. Click Generate spectrum.",
+    errLineValues: (n) => `Line ${n}: 2 values are required.`,
+    errLineInvalid: (n, a, b) => `Line ${n}: invalid values "${a}, ${b}".`,
+    errLineNegative: (n) => `Line ${n}: negative intensity ignored.`,
+    filename: "mass_spectrum",
+  },
+};
+
+let currentLang = "pt-BR";
+const t = () => TRANSLATIONS[currentLang];
+
 const EXAMPLE = `50.1, 12
 51.1, 18
 52.1, 8
@@ -52,7 +138,7 @@ function parseData(text) {
 
     const parts = line.split(/[\s,;\t]+/).filter(Boolean);
     if (parts.length < 2) {
-      errors.push(`Linha ${idx + 1}: são necessários 2 valores.`);
+      errors.push(t().errLineValues(idx + 1));
       return;
     }
 
@@ -60,11 +146,11 @@ function parseData(text) {
     const i = parseFloat(parts[1].replace(",", "."));
 
     if (Number.isNaN(m) || Number.isNaN(i)) {
-      errors.push(`Linha ${idx + 1}: valores inválidos "${parts[0]}, ${parts[1]}".`);
+      errors.push(t().errLineInvalid(idx + 1, parts[0], parts[1]));
       return;
     }
     if (i < 0) {
-      errors.push(`Linha ${idx + 1}: intensidade negativa ignorada.`);
+      errors.push(t().errLineNegative(idx + 1));
       return;
     }
 
@@ -99,7 +185,7 @@ function buildStemTraces(mz, intensity, color) {
     x: mz,
     y: intensity,
     marker: { color, size: 6, symbol: "circle" },
-    hovertemplate: "m/z: %{x}<br>Intensidade: %{y:.2f}<extra></extra>",
+    hovertemplate: `m/z: %{x}<br>${t().hoverIntensity}: %{y:.2f}<extra></extra>`,
     showlegend: false,
   };
 
@@ -124,7 +210,7 @@ function plot() {
   const parsed = parseData(els.dataInput.value);
 
   if (parsed.mz.length === 0) {
-    setStatus("Nenhum dado válido encontrado. Verifique o formato.", "error");
+    setStatus(t().statusNoData, "error");
     return;
   }
 
@@ -154,7 +240,7 @@ function plot() {
       gridcolor: "#eceff3",
     },
     yaxis: {
-      title: { text: els.yLabelInput.value || "Intensidade" },
+      title: { text: els.yLabelInput.value || t().hoverIntensity },
       range: [0, yMax + yPadding],
       zeroline: true,
       zerolinecolor: "#aab2bd",
@@ -192,13 +278,13 @@ function plot() {
 
   Plotly.react(els.chart, traces, layout, { responsive, displaylogo: false });
 
-  const extra = parsed.errors.length ? ` (${parsed.errors.length} linha(s) ignorada(s))` : "";
-  setStatus(`Espectro gerado com ${parsed.mz.length} picos${extra}.`, "success");
+  const extra = parsed.errors.length ? t().statusLinesIgnored(parsed.errors.length) : "";
+  setStatus(t().statusGenerated(parsed.mz.length, extra), "success");
 }
 
 function downloadPng() {
   if (!els.chart.data) {
-    setStatus("Gere o espectro antes de baixar.", "error");
+    setStatus(t().statusPlotFirst, "error");
     return;
   }
   const width = parseInt(els.widthInput.value, 10) || 1200;
@@ -206,7 +292,7 @@ function downloadPng() {
   const scale = parseFloat(els.scaleInput.value) || 2;
   Plotly.downloadImage(els.chart, {
     format: "png",
-    filename: "espectro_massa",
+    filename: t().filename,
     width,
     height,
     scale,
@@ -217,17 +303,65 @@ function readFile(file) {
   const reader = new FileReader();
   reader.onload = (e) => {
     els.dataInput.value = e.target.result;
-    setStatus(`Arquivo "${file.name}" carregado.`, "success");
+    setStatus(t().statusFileLoaded(file.name), "success");
   };
-  reader.onerror = () => setStatus("Erro ao ler o arquivo.", "error");
+  reader.onerror = () => setStatus(t().statusFileError, "error");
   reader.readAsText(file);
+}
+
+function applyLanguage(lang) {
+  if (!TRANSLATIONS[lang]) return;
+  const prevDefaults = {
+    title: TRANSLATIONS[currentLang].chartTitleDefault,
+    yLabel: TRANSLATIONS[currentLang].yLabelDefault,
+  };
+  currentLang = lang;
+  const dict = TRANSLATIONS[lang];
+  document.documentElement.lang = lang;
+
+  document.querySelectorAll("[data-i18n]").forEach((el) => {
+    const key = el.getAttribute("data-i18n");
+    if (dict[key] != null) {
+      if (el.tagName === "TITLE") {
+        document.title = dict[key];
+      } else if (el.tagName === "LABEL" && el.classList.contains("file-button")) {
+        const input = el.querySelector("input");
+        el.textContent = dict[key];
+        if (input) el.appendChild(input);
+      } else {
+        el.textContent = dict[key];
+      }
+    }
+  });
+  document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+    const key = el.getAttribute("data-i18n-placeholder");
+    if (dict[key] != null) el.placeholder = dict[key];
+  });
+  document.querySelectorAll("[data-i18n-value]").forEach((el) => {
+    const key = el.getAttribute("data-i18n-value");
+    if (dict[key] == null) return;
+    const prev = key === "chartTitleDefault" ? prevDefaults.title : key === "yLabelDefault" ? prevDefaults.yLabel : null;
+    if (prev == null || el.value === "" || el.value === prev) {
+      el.value = dict[key];
+    }
+  });
+
+  document.querySelectorAll(".lang-btn").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.lang === lang);
+  });
+
+  try {
+    localStorage.setItem("ms-lang", lang);
+  } catch (_) {}
+
+  if (els.chart.data) plot();
 }
 
 els.plotBtn.addEventListener("click", plot);
 els.downloadBtn.addEventListener("click", downloadPng);
 els.loadExampleBtn.addEventListener("click", () => {
   els.dataInput.value = EXAMPLE;
-  setStatus("Exemplo carregado. Clique em Gerar espectro.");
+  setStatus(t().statusExampleLoaded);
 });
 els.clearBtn.addEventListener("click", () => {
   els.dataInput.value = "";
@@ -249,5 +383,20 @@ els.previewSizeInput.addEventListener("change", replotIfReady);
   });
 });
 
+document.querySelectorAll(".lang-btn").forEach((btn) => {
+  btn.addEventListener("click", () => applyLanguage(btn.dataset.lang));
+});
+
+let initialLang = "pt-BR";
+try {
+  const saved = localStorage.getItem("ms-lang");
+  if (saved && TRANSLATIONS[saved]) {
+    initialLang = saved;
+  } else if (navigator.language && navigator.language.toLowerCase().startsWith("en")) {
+    initialLang = "en";
+  }
+} catch (_) {}
+
+applyLanguage(initialLang);
 els.dataInput.value = EXAMPLE;
 plot();

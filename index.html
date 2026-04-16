@@ -3,25 +3,33 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gerador de Espectro de Massa</title>
+  <title data-i18n="pageTitle">Gerador de Espectro de Massa</title>
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 </head>
 <body>
   <header>
-    <h1>Gerador de Espectro de Massa</h1>
-    <p class="subtitle">Insira uma lista de valores m/z e intensidade para gerar o espectro</p>
+    <div class="header-row">
+      <div>
+        <h1 data-i18n="title">Gerador de Espectro de Massa</h1>
+        <p class="subtitle" data-i18n="subtitle">Insira uma lista de valores m/z e intensidade para gerar o espectro</p>
+      </div>
+      <div class="lang-switcher" role="group" aria-label="Language">
+        <button type="button" class="lang-btn active" data-lang="pt-BR">PT</button>
+        <button type="button" class="lang-btn" data-lang="en">EN</button>
+      </div>
+    </div>
   </header>
 
   <main>
     <section class="controls">
       <div class="input-group">
-        <label for="data-input">Dados (m/z, intensidade)</label>
-        <textarea id="data-input" rows="12" placeholder="Um par por linha. Separadores aceitos: vírgula, ponto e vírgula, tab ou espaço.&#10;&#10;Exemplo:&#10;50.1, 12&#10;77.0, 45&#10;91.1, 100&#10;105.0, 38&#10;120.2, 8"></textarea>
+        <label for="data-input" data-i18n="dataLabel">Dados (m/z, intensidade)</label>
+        <textarea id="data-input" rows="12" data-i18n-placeholder="dataPlaceholder" placeholder="Um par por linha. Separadores aceitos: vírgula, ponto e vírgula, tab ou espaço.&#10;&#10;Exemplo:&#10;50.1, 12&#10;77.0, 45&#10;91.1, 100&#10;105.0, 38&#10;120.2, 8"></textarea>
         <div class="button-row">
-          <button id="load-example" type="button">Carregar exemplo</button>
-          <button id="clear-data" type="button" class="secondary">Limpar</button>
-          <label class="file-button">
+          <button id="load-example" type="button" data-i18n="loadExample">Carregar exemplo</button>
+          <button id="clear-data" type="button" class="secondary" data-i18n="clear">Limpar</button>
+          <label class="file-button" data-i18n="loadFile">
             Carregar arquivo (.csv/.txt)
             <input type="file" id="file-input" accept=".csv,.txt,.tsv" hidden />
           </label>
@@ -30,58 +38,58 @@
 
       <div class="options-group">
         <div class="option">
-          <label for="title-input">Título do gráfico</label>
-          <input type="text" id="title-input" value="Espectro de Massa" />
+          <label for="title-input" data-i18n="chartTitle">Título do gráfico</label>
+          <input type="text" id="title-input" value="Espectro de Massa" data-i18n-value="chartTitleDefault" />
         </div>
         <div class="option">
-          <label for="xlabel-input">Rótulo X</label>
+          <label for="xlabel-input" data-i18n="xLabel">Rótulo X</label>
           <input type="text" id="xlabel-input" value="m/z" />
         </div>
         <div class="option">
-          <label for="ylabel-input">Rótulo Y</label>
-          <input type="text" id="ylabel-input" value="Intensidade relativa (%)" />
+          <label for="ylabel-input" data-i18n="yLabel">Rótulo Y</label>
+          <input type="text" id="ylabel-input" value="Intensidade relativa (%)" data-i18n-value="yLabelDefault" />
         </div>
         <div class="option">
-          <label for="color-input">Cor dos picos</label>
+          <label for="color-input" data-i18n="peakColor">Cor dos picos</label>
           <input type="color" id="color-input" value="#1f4e8b" />
         </div>
         <div class="option checkbox">
           <input type="checkbox" id="normalize-input" checked />
-          <label for="normalize-input">Normalizar para pico base (100%)</label>
+          <label for="normalize-input" data-i18n="normalize">Normalizar para pico base (100%)</label>
         </div>
         <div class="option checkbox">
           <input type="checkbox" id="label-input" checked />
-          <label for="label-input">Rotular picos principais</label>
+          <label for="label-input" data-i18n="labelPeaks">Rotular picos principais</label>
         </div>
         <div class="option">
-          <label for="threshold-input">Limite para rótulos (%)</label>
+          <label for="threshold-input" data-i18n="threshold">Limite para rótulos (%)</label>
           <input type="number" id="threshold-input" value="10" min="0" max="100" step="1" />
         </div>
         <div class="option">
-          <label for="decimals-input">Casas decimais do m/z</label>
+          <label for="decimals-input" data-i18n="decimals">Casas decimais do m/z</label>
           <input type="number" id="decimals-input" value="1" min="0" max="4" step="1" />
         </div>
         <div class="option">
-          <label for="width-input">Largura (px)</label>
+          <label for="width-input" data-i18n="width">Largura (px)</label>
           <input type="number" id="width-input" value="1200" min="200" max="8000" step="10" />
         </div>
         <div class="option">
-          <label for="height-input">Altura (px)</label>
+          <label for="height-input" data-i18n="height">Altura (px)</label>
           <input type="number" id="height-input" value="700" min="200" max="8000" step="10" />
         </div>
         <div class="option">
-          <label for="scale-input">Escala (DPI)</label>
+          <label for="scale-input" data-i18n="scale">Escala (DPI)</label>
           <input type="number" id="scale-input" value="2" min="1" max="6" step="1" />
         </div>
         <div class="option checkbox">
           <input type="checkbox" id="preview-size-input" />
-          <label for="preview-size-input">Visualizar no tamanho de exportação</label>
+          <label for="preview-size-input" data-i18n="previewSize">Visualizar no tamanho de exportação</label>
         </div>
       </div>
 
       <div class="action-row">
-        <button id="plot-btn" type="button" class="primary">Gerar espectro</button>
-        <button id="download-btn" type="button">Baixar PNG</button>
+        <button id="plot-btn" type="button" class="primary" data-i18n="generate">Gerar espectro</button>
+        <button id="download-btn" type="button" data-i18n="downloadPng">Baixar PNG</button>
       </div>
       <div id="status" class="status" role="status" aria-live="polite"></div>
     </section>
@@ -92,7 +100,7 @@
   </main>
 
   <footer>
-    <small>Feito com Plotly.js &middot; Todos os cálculos rodam no navegador</small>
+    <small data-i18n="footer">Feito com Plotly.js &middot; Todos os cálculos rodam no navegador</small>
   </footer>
 
   <script src="script.js"></script>
