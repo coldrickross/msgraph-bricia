@@ -343,12 +343,13 @@ function axisName(ref, kind) {
   return m ? `${base}${m[1]}` : base;
 }
 
-function resolveAnnotationOverlap(annotations, fullLayout, fontSize) {
+function resolveAnnotationOverlap(annotations, fullLayout, fontSize, peaksByAxis) {
   if (!annotations.length || !fullLayout) return annotations;
   const lineH = fontSize * 1.2;
   const baseShift = 10;
   const pad = 2;
   const charW = fontSize * 0.6;
+  const stemHalfW = 1;
 
   const groups = new Map();
   annotations.forEach((ann, idx) => {
@@ -374,8 +375,19 @@ function resolveAnnotationOverlap(annotations, fullLayout, fontSize) {
     const pxPerX = xAxis._length / xSpan;
     const pxPerY = yAxis._length / ySpan;
 
+    const stemBoxes = (peaksByAxis && peaksByAxis.get(key) ? peaksByAxis.get(key) : []).map((peak) => {
+      const sx = (peak.x - xRange[0]) * pxPerX;
+      const sTop = yAxis._length - (peak.y - yRange[0]) * pxPerY;
+      return {
+        left: sx - stemHalfW,
+        right: sx + stemHalfW,
+        top: sTop,
+        bottom: yAxis._length,
+      };
+    });
+
     const sorted = entries.slice().sort((a, b) => a.ann.x - b.ann.x);
-    const placed = [];
+    const placed = stemBoxes.slice();
 
     sorted.forEach(({ ann, idx }) => {
       const w = ann.text.length * charW + 2;
@@ -387,7 +399,7 @@ function resolveAnnotationOverlap(annotations, fullLayout, fontSize) {
       const right = xC + w / 2;
 
       let guard = 0;
-      while (guard++ < 40) {
+      while (guard++ < 60) {
         let bumped = false;
         for (const p of placed) {
           if (p.right < left - pad || p.left > right + pad) continue;
@@ -508,6 +520,13 @@ function plot() {
 
   let traces;
   let annotations = [];
+  const peaksByAxis = new Map();
+  const registerPeaks = (mzArr, intArr, xref, yref) => {
+    const key = `${xref}|${yref}`;
+    const list = peaksByAxis.get(key) || [];
+    mzArr.forEach((m, i) => list.push({ x: m, y: intArr[i] }));
+    peaksByAxis.set(key, list);
+  };
   const threshold = parseFloat(els.thresholdInput.value) || 0;
   const decimals = parseInt(els.decimalsInput.value, 10) || 0;
 
@@ -558,6 +577,8 @@ function plot() {
     const topTraces = buildStemTraces(parsed.mz, intensity, color, "x2", "y2", showPeakMarkers, 1);
     const bottomTraces = buildStemTraces(parsed2.mz, intensity2, color2, "x", "y", showPeakMarkers, 2);
     traces = topTraces.concat(bottomTraces);
+    registerPeaks(parsed.mz, intensity, "x2", "y2");
+    registerPeaks(parsed2.mz, intensity2, "x", "y");
 
     const labeledTop = new Set();
     const labeledBottom = new Set();
@@ -590,6 +611,7 @@ function plot() {
     };
 
     traces = buildStemTraces(parsed.mz, intensity, color, "x", "y", showPeakMarkers, 1);
+    registerPeaks(parsed.mz, intensity, "x", "y");
 
     const labeled = new Set();
     if (els.labelInput.checked) {
@@ -623,7 +645,7 @@ function plot() {
 
   Plotly.react(els.chart, traces, layout, { responsive, displaylogo: false });
   if (annotations.length && els.chart._fullLayout) {
-    const resolved = resolveAnnotationOverlap(annotations, els.chart._fullLayout, fontSize);
+    const resolved = resolveAnnotationOverlap(annotations, els.chart._fullLayout, fontSize, peaksByAxis);
     Plotly.relayout(els.chart, { annotations: resolved });
   }
   attachZoomClamp();
