@@ -15,6 +15,8 @@ const els = {
   normalizeInput: document.getElementById("normalize-input"),
   labelInput: document.getElementById("label-input"),
   thresholdInput: document.getElementById("threshold-input"),
+  clickLabelInput: document.getElementById("click-label-input"),
+  clearSelectionBtn: document.getElementById("clear-selection-btn"),
   decimalsInput: document.getElementById("decimals-input"),
   xMinInput: document.getElementById("xmin-input"),
   xMaxInput: document.getElementById("xmax-input"),
@@ -83,6 +85,8 @@ const TRANSLATIONS = {
     normalize: "Normalizar para pico base (100%)",
     labelPeaks: "Rotular picos principais",
     threshold: "Limite para rótulos (%)",
+    clickLabel: "Mostrar m/z ao clicar no pico",
+    clearSelection: "Limpar seleção de picos",
     decimals: "Casas decimais do m/z",
     xMin: "m/z mínimo (auto se vazio)",
     xMax: "m/z máximo (auto se vazio)",
@@ -147,6 +151,8 @@ const TRANSLATIONS = {
     normalize: "Normalize to base peak (100%)",
     labelPeaks: "Label main peaks",
     threshold: "Label threshold (%)",
+    clickLabel: "Show m/z on peak click",
+    clearSelection: "Clear peak selection",
     decimals: "m/z decimal places",
     xMin: "Min m/z (auto if empty)",
     xMax: "Max m/z (auto if empty)",
@@ -175,6 +181,8 @@ const TRANSLATIONS = {
 
 let currentLang = "pt-BR";
 const t = () => TRANSLATIONS[currentLang];
+
+const selectedMz = { 1: new Set(), 2: new Set() };
 
 const EXAMPLE = `229.171734 5.021981
 243.188475 105.326878
@@ -250,7 +258,7 @@ function parseData(text) {
   return { mz, intensity, errors };
 }
 
-function buildStemTraces(mz, intensity, color, xaxisRef = "x", yaxisRef = "y", showMarkers = true) {
+function buildStemTraces(mz, intensity, color, xaxisRef = "x", yaxisRef = "y", showMarkers = true, spectrumIndex = 1) {
   const xs = [];
   const ys = [];
   mz.forEach((m, idx) => {
@@ -273,15 +281,16 @@ function buildStemTraces(mz, intensity, color, xaxisRef = "x", yaxisRef = "y", s
   const markers = {
     type: "scatter",
     mode: "markers",
-    x: mz,
-    y: intensity,
+    x: mz.slice(),
+    y: intensity.slice(),
     xaxis: xaxisRef,
     yaxis: yaxisRef,
     marker: showMarkers
       ? { color, size: 6, symbol: "circle" }
-      : { color, size: 0.1, opacity: 0 },
+      : { color, size: 10, opacity: 0 },
     hovertemplate: `m/z: %{x}<br>${t().hoverIntensity}: %{y:.2f}<extra></extra>`,
     showlegend: false,
+    meta: { peakSpectrum: spectrumIndex },
   };
 
   return [stems, markers];
@@ -303,6 +312,31 @@ function buildAnnotations(mz, intensity, threshold, decimals, fontSize, fontFami
     }));
 }
 
+function buildSelectedAnnotations(mz, intensity, selected, decimals, fontSize, fontFamily, textColor, xref, yref, excludeSet) {
+  if (!selected || !selected.size) return [];
+  return mz
+    .map((m, idx) => ({ m, i: intensity[idx] }))
+    .filter((p) => selected.has(p.m) && !excludeSet.has(p.m))
+    .map((p) => ({
+      x: p.m,
+      y: p.i,
+      xref,
+      yref,
+      text: p.m.toFixed(decimals),
+      showarrow: false,
+      yshift: 10,
+      font: { size: fontSize, color: textColor, family: fontFamily },
+    }));
+}
+
+function pruneSelection(set, mzArray) {
+  if (!set.size) return;
+  const valid = new Set(mzArray);
+  for (const v of Array.from(set)) {
+    if (!valid.has(v)) set.delete(v);
+  }
+}
+
 function normalizeIntensities(intensity, doNormalize) {
   if (!doNormalize) return intensity.slice();
   const max = Math.max(...intensity);
@@ -321,6 +355,9 @@ function plot() {
   const compareEnabled = els.compareInput.checked;
   const parsed2 = compareEnabled ? parseData(els.dataInput2.value) : { mz: [], intensity: [], errors: [] };
   const hasSecond = compareEnabled && parsed2.mz.length > 0;
+
+  pruneSelection(selectedMz[1], parsed.mz);
+  pruneSelection(selectedMz[2], hasSecond ? parsed2.mz : []);
 
   const normalize = els.normalizeInput.checked;
   const intensity = normalizeIntensities(parsed.intensity, normalize);
@@ -446,16 +483,23 @@ function plot() {
       },
     };
 
-    const topTraces = buildStemTraces(parsed.mz, intensity, color, "x2", "y2", showPeakMarkers);
-    const bottomTraces = buildStemTraces(parsed2.mz, intensity2, color2, "x", "y", showPeakMarkers);
+    const topTraces = buildStemTraces(parsed.mz, intensity, color, "x2", "y2", showPeakMarkers, 1);
+    const bottomTraces = buildStemTraces(parsed2.mz, intensity2, color2, "x", "y", showPeakMarkers, 2);
     traces = topTraces.concat(bottomTraces);
 
+    const labeledTop = new Set();
+    const labeledBottom = new Set();
     if (els.labelInput.checked) {
-      annotations = annotations.concat(
-        buildAnnotations(parsed.mz, intensity, threshold, decimals, fontSize, fontFamily, textColor, "x2", "y2"),
-        buildAnnotations(parsed2.mz, intensity2, threshold, decimals, fontSize, fontFamily, textColor, "x", "y")
-      );
+      const topAnns = buildAnnotations(parsed.mz, intensity, threshold, decimals, fontSize, fontFamily, textColor, "x2", "y2");
+      const botAnns = buildAnnotations(parsed2.mz, intensity2, threshold, decimals, fontSize, fontFamily, textColor, "x", "y");
+      topAnns.forEach((a) => labeledTop.add(a.x));
+      botAnns.forEach((a) => labeledBottom.add(a.x));
+      annotations = annotations.concat(topAnns, botAnns);
     }
+    annotations = annotations.concat(
+      buildSelectedAnnotations(parsed.mz, intensity, selectedMz[1], decimals, fontSize, fontFamily, textColor, "x2", "y2", labeledTop),
+      buildSelectedAnnotations(parsed2.mz, intensity2, selectedMz[2], decimals, fontSize, fontFamily, textColor, "x", "y", labeledBottom)
+    );
   } else {
     layout.xaxis = {
       ...xAxisBase,
@@ -473,11 +517,17 @@ function plot() {
       },
     };
 
-    traces = buildStemTraces(parsed.mz, intensity, color, "x", "y", showPeakMarkers);
+    traces = buildStemTraces(parsed.mz, intensity, color, "x", "y", showPeakMarkers, 1);
 
+    const labeled = new Set();
     if (els.labelInput.checked) {
-      annotations = buildAnnotations(parsed.mz, intensity, threshold, decimals, fontSize, fontFamily, textColor);
+      const anns = buildAnnotations(parsed.mz, intensity, threshold, decimals, fontSize, fontFamily, textColor);
+      anns.forEach((a) => labeled.add(a.x));
+      annotations = anns;
     }
+    annotations = annotations.concat(
+      buildSelectedAnnotations(parsed.mz, intensity, selectedMz[1], decimals, fontSize, fontFamily, textColor, "x", "y", labeled)
+    );
   }
 
   if (annotations.length) layout.annotations = annotations;
@@ -501,11 +551,32 @@ function plot() {
 
   Plotly.react(els.chart, traces, layout, { responsive, displaylogo: false });
   attachZoomClamp();
+  attachPeakClick();
 
   const totalPeaks = parsed.mz.length + (hasSecond ? parsed2.mz.length : 0);
   const ignored = parsed.errors.length + (hasSecond ? parsed2.errors.length : 0);
   const extra = ignored ? t().statusLinesIgnored(ignored) : "";
   setStatus(t().statusGenerated(totalPeaks, extra), "success");
+}
+
+function attachPeakClick() {
+  if (els.chart._peakClickAttached) return;
+  els.chart._peakClickAttached = true;
+  els.chart.on("plotly_click", (event) => {
+    if (!els.clickLabelInput.checked) return;
+    if (!event || !event.points || !event.points.length) return;
+    const point = event.points[0];
+    const data = point.data;
+    if (!data || data.mode !== "markers" || !data.meta || !data.meta.peakSpectrum) return;
+    const spectrum = data.meta.peakSpectrum;
+    const set = selectedMz[spectrum];
+    if (!set) return;
+    const mzVal = data.x[point.pointNumber];
+    if (mzVal == null) return;
+    if (set.has(mzVal)) set.delete(mzVal);
+    else set.add(mzVal);
+    plot();
+  });
 }
 
 function attachZoomClamp() {
@@ -678,8 +749,15 @@ els.previewSizeInput.addEventListener("change", replotIfReady);
   els.colorInput2,
   els.gapInput,
   els.peakMarkerInput,
+  els.clickLabelInput,
 ].forEach((el) => {
   el.addEventListener("change", replotIfReady);
+});
+
+els.clearSelectionBtn.addEventListener("click", () => {
+  selectedMz[1].clear();
+  selectedMz[2].clear();
+  replotIfReady();
 });
 
 [els.yShowInput, els.yShowInput2].forEach((el) => {
