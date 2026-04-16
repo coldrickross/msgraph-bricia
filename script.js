@@ -58,6 +58,10 @@ const TRANSLATIONS = {
     loadFile2: "Carregar arquivo 2 (.csv/.txt)",
     peakColor2: "Cor dos picos (2º)",
     compareSpectra: "Adicionar segundo espectro abaixo",
+    tabData: "Dados",
+    tabStyle: "Estilo",
+    tabAxes: "Eixos e picos",
+    tabExport: "Exportar",
     yShow: "Escala Y (%)",
     yShow2: "Escala Y 2º (%)",
     lockY: "Travar escalas Y dos dois espectros",
@@ -117,6 +121,10 @@ const TRANSLATIONS = {
     loadFile2: "Load file 2 (.csv/.txt)",
     peakColor2: "Peak color (2nd)",
     compareSpectra: "Add a second spectrum below",
+    tabData: "Data",
+    tabStyle: "Style",
+    tabAxes: "Axes & peaks",
+    tabExport: "Export",
     yShow: "Y scale (%)",
     yShow2: "Y scale 2nd (%)",
     lockY: "Lock Y scales of both spectra",
@@ -679,6 +687,22 @@ els.lockYInput.addEventListener("change", () => {
 
 document.querySelectorAll(".lang-btn").forEach((btn) => {
   btn.addEventListener("click", () => applyLanguage(btn.dataset.lang));
+});
+
+function activateTab(name) {
+  document.querySelectorAll(".tab").forEach((b) => {
+    b.classList.toggle("active", b.dataset.tab === name);
+  });
+  document.querySelectorAll(".tab-panel").forEach((p) => {
+    p.hidden = p.dataset.panel !== name;
+  });
+  if (els.chart && els.chart.data && window.Plotly) {
+    Plotly.Plots.resize(els.chart);
+  }
+}
+
+document.querySelectorAll(".tab").forEach((btn) => {
+  btn.addEventListener("click", () => activateTab(btn.dataset.tab));
 });
 
 let initialLang = "pt-BR";

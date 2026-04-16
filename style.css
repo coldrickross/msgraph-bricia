@@ -45,8 +45,8 @@ body {
 }
 
 header {
-  padding: 1.75rem 2rem 1.25rem;
-  background: rgba(255, 255, 255, 0.72);
+  padding: 1rem 2rem;
+  background: rgba(255, 255, 255, 0.82);
   backdrop-filter: saturate(180%) blur(10px);
   -webkit-backdrop-filter: saturate(180%) blur(10px);
   border-bottom: 1px solid rgba(226, 231, 239, 0.7);
@@ -67,7 +67,7 @@ header {
 
 header h1 {
   margin: 0;
-  font-size: 1.6rem;
+  font-size: 1.35rem;
   font-weight: 700;
   letter-spacing: -0.02em;
   background: linear-gradient(135deg, #1e3a8a 0%, #7c3aed 100%);
@@ -77,9 +77,9 @@ header h1 {
 }
 
 .subtitle {
-  margin: 0.3rem 0 0;
+  margin: 0.15rem 0 0;
   color: var(--muted);
-  font-size: 0.95rem;
+  font-size: 0.88rem;
 }
 
 .lang-switcher {
@@ -118,15 +118,16 @@ main {
   display: grid;
   grid-template-columns: 380px 1fr;
   gap: 1.5rem;
-  padding: 1.75rem 2rem;
+  padding: 1.25rem 2rem 1.5rem;
   max-width: 1400px;
   margin: 0 auto;
+  align-items: start;
 }
 
 @media (max-width: 900px) {
   main {
     grid-template-columns: 1fr;
-    padding: 1.25rem;
+    padding: 1rem;
   }
 }
 
@@ -135,14 +136,121 @@ main {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 1.25rem 1.4rem;
   box-shadow: var(--shadow);
   transition: box-shadow 0.2s;
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  max-height: calc(100vh - 6.5rem);
+  position: sticky;
+  top: 5rem;
+  overflow: hidden;
+}
+
+.chart-area {
+  padding: 1rem 1.1rem;
+  position: sticky;
+  top: 5rem;
+  max-height: calc(100vh - 6.5rem);
+}
+
+@media (max-width: 900px) {
+  .controls,
+  .chart-area {
+    position: static;
+    max-height: none;
+  }
+  .controls {
+    max-height: 70vh;
+  }
 }
 
 .controls:hover,
 .chart-area:hover {
   box-shadow: var(--shadow-lg);
+}
+
+.tabs {
+  display: flex;
+  gap: 2px;
+  padding: 0.55rem 0.55rem 0;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(to bottom, var(--panel-alt), var(--panel));
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  flex-shrink: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.tab {
+  flex: 1;
+  min-width: max-content;
+  padding: 0.55rem 0.75rem;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+  box-shadow: none;
+  margin-bottom: -1px;
+  white-space: nowrap;
+}
+
+.tab:hover {
+  color: var(--text);
+  background: rgba(37, 99, 235, 0.05);
+}
+
+.tab.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+  background: var(--panel);
+}
+
+.tab:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.tab-panels {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.1rem 1.25rem;
+  min-height: 0;
+}
+
+.tab-panel[hidden] {
+  display: none;
+}
+
+.compare-toggle {
+  margin-bottom: 1rem;
+}
+
+.tab-panels::-webkit-scrollbar {
+  width: 10px;
+}
+.tab-panels::-webkit-scrollbar-track {
+  background: transparent;
+}
+.tab-panels::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 10px;
+  border: 2px solid var(--panel);
+}
+.tab-panels::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-soft);
 }
 
 .second-spectrum {
@@ -305,9 +413,10 @@ button.secondary {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.85rem;
-  margin-top: 1.1rem;
-  padding-top: 1.1rem;
-  border-top: 1px solid var(--border);
+}
+
+.option.full {
+  grid-column: span 2;
 }
 
 .option.checkbox {
@@ -340,7 +449,10 @@ button.secondary {
 .action-row {
   display: flex;
   gap: 0.6rem;
-  margin-top: 1.1rem;
+  padding: 0.9rem 1.25rem 0;
+  border-top: 1px solid var(--border);
+  background: var(--panel);
+  flex-shrink: 0;
 }
 
 .action-row button {
@@ -350,7 +462,7 @@ button.secondary {
 }
 
 .status {
-  margin-top: 0.85rem;
+  margin: 0.75rem 1.25rem 1rem;
   font-size: 0.85rem;
   min-height: 1.2em;
   color: var(--muted);
@@ -358,6 +470,7 @@ button.secondary {
   border-radius: var(--radius-sm);
   background: transparent;
   transition: background 0.2s, color 0.2s;
+  flex-shrink: 0;
 }
 
 .status:empty {
@@ -379,18 +492,17 @@ button.secondary {
 
 #chart {
   width: 100%;
-  min-height: 560px;
+  height: 100%;
+  min-height: 520px;
 }
 
 .chart-area {
   overflow: auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 #chart[style*="width"] {
   min-height: 0;
+  height: auto;
 }
 
 footer {
