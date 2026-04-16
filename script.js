@@ -36,6 +36,8 @@ const els = {
   loadExampleBtn2: document.getElementById("load-example-2"),
   clearBtn: document.getElementById("clear-data"),
   clearBtn2: document.getElementById("clear-data-2"),
+  clickSelectInput: document.getElementById("click-select-input"),
+  clearSelectionBtn: document.getElementById("clear-selection-btn"),
   fileInput: document.getElementById("file-input"),
   fileInput2: document.getElementById("file-input-2"),
   status: document.getElementById("status"),
@@ -83,6 +85,8 @@ const TRANSLATIONS = {
     normalize: "Normalizar para pico base (100%)",
     labelPeaks: "Rotular picos principais",
     threshold: "Limite para rótulos (%)",
+    clickToLabel: "Mostrar m/z ao clicar no pico",
+    clearSelection: "Limpar seleção de picos",
     decimals: "Casas decimais do m/z",
     xMin: "m/z mínimo (auto se vazio)",
     xMax: "m/z máximo (auto se vazio)",
@@ -147,6 +151,8 @@ const TRANSLATIONS = {
     normalize: "Normalize to base peak (100%)",
     labelPeaks: "Label main peaks",
     threshold: "Label threshold (%)",
+    clickToLabel: "Show m/z when clicking a peak",
+    clearSelection: "Clear peak selection",
     decimals: "m/z decimal places",
     xMin: "Min m/z (auto if empty)",
     xMax: "Max m/z (auto if empty)",
@@ -303,6 +309,33 @@ function buildAnnotations(mz, intensity, threshold, decimals, fontSize, fontFami
     }));
 }
 
+const selectedMz1 = new Set();
+const selectedMz2 = new Set();
+
+function pruneSelection(set, mzArray) {
+  const valid = new Set(mzArray);
+  for (const m of [...set]) {
+    if (!valid.has(m)) set.delete(m);
+  }
+}
+
+function buildManualAnnotations(mz, intensity, selectedSet, autoSet, decimals, fontSize, fontFamily, textColor, xref, yref) {
+  if (!selectedSet.size) return [];
+  return mz
+    .map((m, idx) => ({ m, i: intensity[idx] }))
+    .filter((p) => selectedSet.has(p.m) && !autoSet.has(p.m))
+    .map((p) => ({
+      x: p.m,
+      y: p.i,
+      xref,
+      yref,
+      text: p.m.toFixed(decimals),
+      showarrow: false,
+      yshift: 10,
+      font: { size: fontSize, color: textColor, family: fontFamily },
+    }));
+}
+
 function normalizeIntensities(intensity, doNormalize) {
   if (!doNormalize) return intensity.slice();
   const max = Math.max(...intensity);
@@ -402,6 +435,9 @@ function plot() {
   const threshold = parseFloat(els.thresholdInput.value) || 0;
   const decimals = parseInt(els.decimalsInput.value, 10) || 0;
 
+  pruneSelection(selectedMz1, parsed.mz);
+  if (compareEnabled) pruneSelection(selectedMz2, parsed2.mz);
+
   if (hasSecond) {
     const gapPct = Math.min(Math.max(parseFloat(els.gapInput.value) || 0, 0), 80);
     const half = (1 - gapPct / 100) / 2;
@@ -450,12 +486,19 @@ function plot() {
     const bottomTraces = buildStemTraces(parsed2.mz, intensity2, color2, "x", "y", showPeakMarkers);
     traces = topTraces.concat(bottomTraces);
 
+    const autoSet1 = new Set();
+    const autoSet2 = new Set();
     if (els.labelInput.checked) {
-      annotations = annotations.concat(
-        buildAnnotations(parsed.mz, intensity, threshold, decimals, fontSize, fontFamily, textColor, "x2", "y2"),
-        buildAnnotations(parsed2.mz, intensity2, threshold, decimals, fontSize, fontFamily, textColor, "x", "y")
-      );
+      const a1 = buildAnnotations(parsed.mz, intensity, threshold, decimals, fontSize, fontFamily, textColor, "x2", "y2");
+      const a2 = buildAnnotations(parsed2.mz, intensity2, threshold, decimals, fontSize, fontFamily, textColor, "x", "y");
+      a1.forEach((a) => autoSet1.add(a.x));
+      a2.forEach((a) => autoSet2.add(a.x));
+      annotations = annotations.concat(a1, a2);
     }
+    annotations = annotations.concat(
+      buildManualAnnotations(parsed.mz, intensity, selectedMz1, autoSet1, decimals, fontSize, fontFamily, textColor, "x2", "y2"),
+      buildManualAnnotations(parsed2.mz, intensity2, selectedMz2, autoSet2, decimals, fontSize, fontFamily, textColor, "x", "y")
+    );
   } else {
     layout.xaxis = {
       ...xAxisBase,
@@ -475,9 +518,15 @@ function plot() {
 
     traces = buildStemTraces(parsed.mz, intensity, color, "x", "y", showPeakMarkers);
 
+    const autoSet1 = new Set();
     if (els.labelInput.checked) {
-      annotations = buildAnnotations(parsed.mz, intensity, threshold, decimals, fontSize, fontFamily, textColor);
+      const a1 = buildAnnotations(parsed.mz, intensity, threshold, decimals, fontSize, fontFamily, textColor);
+      a1.forEach((a) => autoSet1.add(a.x));
+      annotations = annotations.concat(a1);
     }
+    annotations = annotations.concat(
+      buildManualAnnotations(parsed.mz, intensity, selectedMz1, autoSet1, decimals, fontSize, fontFamily, textColor, "x", "y")
+    );
   }
 
   if (annotations.length) layout.annotations = annotations;
@@ -501,11 +550,29 @@ function plot() {
 
   Plotly.react(els.chart, traces, layout, { responsive, displaylogo: false });
   attachZoomClamp();
+  attachClickToSelect();
 
   const totalPeaks = parsed.mz.length + (hasSecond ? parsed2.mz.length : 0);
   const ignored = parsed.errors.length + (hasSecond ? parsed2.errors.length : 0);
   const extra = ignored ? t().statusLinesIgnored(ignored) : "";
   setStatus(t().statusGenerated(totalPeaks, extra), "success");
+}
+
+function attachClickToSelect() {
+  if (els.chart._clickSelectAttached) return;
+  els.chart._clickSelectAttached = true;
+  els.chart.on("plotly_click", (evt) => {
+    if (!els.clickSelectInput.checked) return;
+    if (!evt || !evt.points || !evt.points.length) return;
+    const p = evt.points[0];
+    const axisRef = p.data && p.data.xaxis ? p.data.xaxis : "x";
+    const compareEnabled = els.compareInput.checked;
+    const set = compareEnabled && axisRef === "x" ? selectedMz2 : selectedMz1;
+    const m = p.x;
+    if (set.has(m)) set.delete(m);
+    else set.add(m);
+    plot();
+  });
 }
 
 function attachZoomClamp() {
@@ -609,6 +676,11 @@ function applyLanguage(lang) {
 
 els.plotBtn.addEventListener("click", plot);
 els.downloadBtn.addEventListener("click", downloadPng);
+els.clearSelectionBtn.addEventListener("click", () => {
+  selectedMz1.clear();
+  selectedMz2.clear();
+  if (els.chart.data) plot();
+});
 els.loadExampleBtn.addEventListener("click", () => {
   els.dataInput.value = EXAMPLE;
   setStatus(t().statusExampleLoaded);
