@@ -296,7 +296,7 @@ function buildStemTraces(mz, intensity, color, xaxisRef = "x", yaxisRef = "y", s
   return [stems, markers];
 }
 
-function buildAnnotations(mz, intensity, threshold, decimals, fontSize, fontFamily, textColor, xref = "x", yref = "y") {
+function buildAnnotations(mz, intensity, threshold, decimals, fontSize, fontFamily, textColor, bgColor, xref = "x", yref = "y") {
   return mz
     .map((m, idx) => ({ m, i: intensity[idx] }))
     .filter((p) => p.i >= threshold)
@@ -308,11 +308,13 @@ function buildAnnotations(mz, intensity, threshold, decimals, fontSize, fontFami
       text: p.m.toFixed(decimals),
       showarrow: false,
       yshift: 10,
+      bgcolor: bgColor,
+      borderpad: 1,
       font: { size: fontSize, color: textColor, family: fontFamily },
     }));
 }
 
-function buildSelectedAnnotations(mz, intensity, selected, decimals, fontSize, fontFamily, textColor, xref, yref, excludeSet) {
+function buildSelectedAnnotations(mz, intensity, selected, decimals, fontSize, fontFamily, textColor, bgColor, xref, yref, excludeSet) {
   if (!selected || !selected.size) return [];
   return mz
     .map((m, idx) => ({ m, i: intensity[idx] }))
@@ -325,6 +327,8 @@ function buildSelectedAnnotations(mz, intensity, selected, decimals, fontSize, f
       text: p.m.toFixed(decimals),
       showarrow: false,
       yshift: 10,
+      bgcolor: bgColor,
+      borderpad: 1,
       font: { size: fontSize, color: textColor, family: fontFamily },
     }));
 }
@@ -343,13 +347,12 @@ function axisName(ref, kind) {
   return m ? `${base}${m[1]}` : base;
 }
 
-function resolveAnnotationOverlap(annotations, fullLayout, fontSize, peaksByAxis) {
+function resolveAnnotationOverlap(annotations, fullLayout, fontSize) {
   if (!annotations.length || !fullLayout) return annotations;
   const lineH = fontSize * 1.2;
   const baseShift = 10;
   const pad = 2;
   const charW = fontSize * 0.6;
-  const stemHalfW = 1;
 
   const groups = new Map();
   annotations.forEach((ann, idx) => {
@@ -375,19 +378,8 @@ function resolveAnnotationOverlap(annotations, fullLayout, fontSize, peaksByAxis
     const pxPerX = xAxis._length / xSpan;
     const pxPerY = yAxis._length / ySpan;
 
-    const stemBoxes = (peaksByAxis && peaksByAxis.get(key) ? peaksByAxis.get(key) : []).map((peak) => {
-      const sx = (peak.x - xRange[0]) * pxPerX;
-      const sTop = yAxis._length - (peak.y - yRange[0]) * pxPerY;
-      return {
-        left: sx - stemHalfW,
-        right: sx + stemHalfW,
-        top: sTop,
-        bottom: yAxis._length,
-      };
-    });
-
     const sorted = entries.slice().sort((a, b) => a.ann.x - b.ann.x);
-    const placed = stemBoxes.slice();
+    const placed = [];
 
     sorted.forEach(({ ann, idx }) => {
       const w = ann.text.length * charW + 2;
@@ -399,7 +391,7 @@ function resolveAnnotationOverlap(annotations, fullLayout, fontSize, peaksByAxis
       const right = xC + w / 2;
 
       let guard = 0;
-      while (guard++ < 60) {
+      while (guard++ < 40) {
         let bumped = false;
         for (const p of placed) {
           if (p.right < left - pad || p.left > right + pad) continue;
@@ -520,13 +512,6 @@ function plot() {
 
   let traces;
   let annotations = [];
-  const peaksByAxis = new Map();
-  const registerPeaks = (mzArr, intArr, xref, yref) => {
-    const key = `${xref}|${yref}`;
-    const list = peaksByAxis.get(key) || [];
-    mzArr.forEach((m, i) => list.push({ x: m, y: intArr[i] }));
-    peaksByAxis.set(key, list);
-  };
   const threshold = parseFloat(els.thresholdInput.value) || 0;
   const decimals = parseInt(els.decimalsInput.value, 10) || 0;
 
@@ -577,21 +562,19 @@ function plot() {
     const topTraces = buildStemTraces(parsed.mz, intensity, color, "x2", "y2", showPeakMarkers, 1);
     const bottomTraces = buildStemTraces(parsed2.mz, intensity2, color2, "x", "y", showPeakMarkers, 2);
     traces = topTraces.concat(bottomTraces);
-    registerPeaks(parsed.mz, intensity, "x2", "y2");
-    registerPeaks(parsed2.mz, intensity2, "x", "y");
 
     const labeledTop = new Set();
     const labeledBottom = new Set();
     if (els.labelInput.checked) {
-      const topAnns = buildAnnotations(parsed.mz, intensity, threshold, decimals, fontSize, fontFamily, textColor, "x2", "y2");
-      const botAnns = buildAnnotations(parsed2.mz, intensity2, threshold, decimals, fontSize, fontFamily, textColor, "x", "y");
+      const topAnns = buildAnnotations(parsed.mz, intensity, threshold, decimals, fontSize, fontFamily, textColor, bgColor, "x2", "y2");
+      const botAnns = buildAnnotations(parsed2.mz, intensity2, threshold, decimals, fontSize, fontFamily, textColor, bgColor, "x", "y");
       topAnns.forEach((a) => labeledTop.add(a.x));
       botAnns.forEach((a) => labeledBottom.add(a.x));
       annotations = annotations.concat(topAnns, botAnns);
     }
     annotations = annotations.concat(
-      buildSelectedAnnotations(parsed.mz, intensity, selectedMz[1], decimals, fontSize, fontFamily, textColor, "x2", "y2", labeledTop),
-      buildSelectedAnnotations(parsed2.mz, intensity2, selectedMz[2], decimals, fontSize, fontFamily, textColor, "x", "y", labeledBottom)
+      buildSelectedAnnotations(parsed.mz, intensity, selectedMz[1], decimals, fontSize, fontFamily, textColor, bgColor, "x2", "y2", labeledTop),
+      buildSelectedAnnotations(parsed2.mz, intensity2, selectedMz[2], decimals, fontSize, fontFamily, textColor, bgColor, "x", "y", labeledBottom)
     );
   } else {
     layout.xaxis = {
@@ -611,16 +594,15 @@ function plot() {
     };
 
     traces = buildStemTraces(parsed.mz, intensity, color, "x", "y", showPeakMarkers, 1);
-    registerPeaks(parsed.mz, intensity, "x", "y");
 
     const labeled = new Set();
     if (els.labelInput.checked) {
-      const anns = buildAnnotations(parsed.mz, intensity, threshold, decimals, fontSize, fontFamily, textColor);
+      const anns = buildAnnotations(parsed.mz, intensity, threshold, decimals, fontSize, fontFamily, textColor, bgColor);
       anns.forEach((a) => labeled.add(a.x));
       annotations = anns;
     }
     annotations = annotations.concat(
-      buildSelectedAnnotations(parsed.mz, intensity, selectedMz[1], decimals, fontSize, fontFamily, textColor, "x", "y", labeled)
+      buildSelectedAnnotations(parsed.mz, intensity, selectedMz[1], decimals, fontSize, fontFamily, textColor, bgColor, "x", "y", labeled)
     );
   }
 
@@ -645,7 +627,7 @@ function plot() {
 
   Plotly.react(els.chart, traces, layout, { responsive, displaylogo: false });
   if (annotations.length && els.chart._fullLayout) {
-    const resolved = resolveAnnotationOverlap(annotations, els.chart._fullLayout, fontSize, peaksByAxis);
+    const resolved = resolveAnnotationOverlap(annotations, els.chart._fullLayout, fontSize);
     Plotly.relayout(els.chart, { annotations: resolved });
   }
   attachZoomClamp();
