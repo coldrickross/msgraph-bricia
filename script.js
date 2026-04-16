@@ -14,6 +14,9 @@ const els = {
   labelInput: document.getElementById("label-input"),
   thresholdInput: document.getElementById("threshold-input"),
   decimalsInput: document.getElementById("decimals-input"),
+  xMinInput: document.getElementById("xmin-input"),
+  xMaxInput: document.getElementById("xmax-input"),
+  boxInput: document.getElementById("box-input"),
   widthInput: document.getElementById("width-input"),
   heightInput: document.getElementById("height-input"),
   scaleInput: document.getElementById("scale-input"),
@@ -54,6 +57,9 @@ const TRANSLATIONS = {
     labelPeaks: "Rotular picos principais",
     threshold: "Limite para rótulos (%)",
     decimals: "Casas decimais do m/z",
+    xMin: "m/z mínimo (auto se vazio)",
+    xMax: "m/z máximo (auto se vazio)",
+    closeBox: "Fechar caixa do gráfico",
     width: "Largura (px)",
     height: "Altura (px)",
     scale: "Escala (DPI)",
@@ -100,6 +106,9 @@ const TRANSLATIONS = {
     labelPeaks: "Label main peaks",
     threshold: "Label threshold (%)",
     decimals: "m/z decimal places",
+    xMin: "Min m/z (auto if empty)",
+    xMax: "Max m/z (auto if empty)",
+    closeBox: "Close plot box",
     width: "Width (px)",
     height: "Height (px)",
     scale: "Scale (DPI)",
@@ -250,9 +259,16 @@ function plot() {
 
   const yMax = Math.max(...intensity);
   const yPadding = yMax * 0.12;
-  const xMin = Math.min(...parsed.mz);
-  const xMax = Math.max(...parsed.mz);
-  const xPadding = Math.max((xMax - xMin) * 0.05, 1);
+  const dataXMin = Math.min(...parsed.mz);
+  const dataXMax = Math.max(...parsed.mz);
+  const xMinRaw = els.xMinInput.value.trim();
+  const xMaxRaw = els.xMaxInput.value.trim();
+  const xMinUser = xMinRaw === "" ? NaN : parseFloat(xMinRaw.replace(",", "."));
+  const xMaxUser = xMaxRaw === "" ? NaN : parseFloat(xMaxRaw.replace(",", "."));
+  const xPadding = Math.max((dataXMax - dataXMin) * 0.05, 1);
+  const xMin = Number.isFinite(xMinUser) ? xMinUser : dataXMin - xPadding;
+  const xMax = Number.isFinite(xMaxUser) ? xMaxUser : dataXMax + xPadding;
+  const closeBox = els.boxInput.checked;
 
   const layout = {
     title: {
@@ -266,12 +282,14 @@ function plot() {
         font: { size: fontSize, family: fontFamily, color: textColor },
       },
       tickfont: { size: fontSize, family: fontFamily, color: textColor },
-      range: [xMin - xPadding, xMax + xPadding],
+      range: [xMin, xMax],
       zeroline: false,
       showgrid: showGrid,
       gridcolor: gridColor,
       linecolor: textColor,
       tickcolor: textColor,
+      mirror: closeBox ? "ticks" : false,
+      showline: true,
     },
     yaxis: {
       title: {
@@ -286,6 +304,8 @@ function plot() {
       gridcolor: gridColor,
       linecolor: textColor,
       tickcolor: textColor,
+      mirror: closeBox ? "ticks" : false,
+      showline: true,
     },
     margin: { l: 70, r: 30, t: 60, b: 60 },
     plot_bgcolor: bgColor,
@@ -438,6 +458,9 @@ els.previewSizeInput.addEventListener("change", replotIfReady);
   els.fontFamilyInput,
   els.fontSizeInput,
   els.gridInput,
+  els.xMinInput,
+  els.xMaxInput,
+  els.boxInput,
 ].forEach((el) => {
   el.addEventListener("change", replotIfReady);
 });
