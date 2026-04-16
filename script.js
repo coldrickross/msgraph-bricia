@@ -285,6 +285,23 @@ function parseData(text) {
   return { mz, intensity, errors };
 }
 
+function makeSharedYLabel(text, fontSize, fontFamily, textColor, margin) {
+  const leftMargin = (margin && margin.l) || 70;
+  return {
+    text,
+    xref: "paper",
+    yref: "paper",
+    x: 0,
+    y: 0.5,
+    xanchor: "center",
+    yanchor: "middle",
+    xshift: -leftMargin * 0.6,
+    textangle: -90,
+    showarrow: false,
+    font: { size: fontSize, family: fontFamily, color: textColor },
+  };
+}
+
 function buildStemTraces(mz, intensity, color, xaxisRef = "x", yaxisRef = "y", showMarkers = true) {
   const xs = [];
   const ys = [];
@@ -574,31 +591,20 @@ function plot() {
       domain: bottomDomain,
       anchor: "x",
       range: [0, yAxisTop3],
-      title: {
-        text: yLabelText,
-        font: { size: fontSize, family: fontFamily, color: textColor },
-      },
     };
     layout.yaxis2 = {
       ...yAxisBase,
       domain: middleDomain,
       anchor: "x2",
       range: [0, yAxisTop2],
-      title: {
-        text: yLabelText,
-        font: { size: fontSize, family: fontFamily, color: textColor },
-      },
     };
     layout.yaxis3 = {
       ...yAxisBase,
       domain: topDomain,
       anchor: "x3",
       range: [0, yAxisTop],
-      title: {
-        text: yLabelText,
-        font: { size: fontSize, family: fontFamily, color: textColor },
-      },
     };
+    annotations.push(makeSharedYLabel(yLabelText, fontSize, fontFamily, textColor, layout.margin));
 
     const topTraces = buildStemTraces(parsed.mz, intensity, color, "x3", "y3", showPeakMarkers);
     const middleTraces = buildStemTraces(parsed2.mz, intensity2, color2, "x2", "y2", showPeakMarkers);
@@ -663,21 +669,14 @@ function plot() {
       domain: bottomDomain,
       anchor: "x",
       range: [0, yAxisTop2],
-      title: {
-        text: yLabelText,
-        font: { size: fontSize, family: fontFamily, color: textColor },
-      },
     };
     layout.yaxis2 = {
       ...yAxisBase,
       domain: topDomain,
       anchor: "x2",
       range: [0, yAxisTop],
-      title: {
-        text: yLabelText,
-        font: { size: fontSize, family: fontFamily, color: textColor },
-      },
     };
+    annotations.push(makeSharedYLabel(yLabelText, fontSize, fontFamily, textColor, layout.margin));
 
     const topTraces = buildStemTraces(parsed.mz, intensity, color, "x2", "y2", showPeakMarkers);
     const bottomTraces = buildStemTraces(parsed2.mz, intensity2, color2, "x", "y", showPeakMarkers);
