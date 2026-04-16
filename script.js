@@ -427,6 +427,60 @@ function avoidStemCollisions(annotations, mz, intensity, xMin, xMax, plotWidthPx
   }
 }
 
+function avoidFrameLineCollisions(annotations, mz, intensity, xMin, xMax, plotWidthPx, yAxisTop, subplotHeightPx, fontSize) {
+  if (!annotations || !annotations.length) return;
+  if (!Number.isFinite(plotWidthPx) || plotWidthPx <= 0) return;
+  if (!Number.isFinite(subplotHeightPx) || subplotHeightPx <= 0) return;
+  if (!Number.isFinite(yAxisTop) || yAxisTop <= 0) return;
+  const xRange = xMax - xMin;
+  if (!Number.isFinite(xRange) || xRange <= 0) return;
+  const pxPerDataX = plotWidthPx / xRange;
+  const epsilon = 1e-9;
+
+  for (const ann of annotations) {
+    const peakPx = (ann.y / yAxisTop) * subplotHeightPx;
+    const yshift = ann.yshift == null ? 0 : ann.yshift;
+    const labelTopPx = ann.yanchor === "top"
+      ? peakPx + yshift + fontSize
+      : peakPx + yshift + fontSize / 2;
+    if (labelTopPx <= subplotHeightPx - 1) continue;
+
+    const m = ann.x;
+    const i = ann.y;
+    const text = String(ann.text == null ? "" : ann.text);
+    const textWidthPx = Math.max(1, text.length * fontSize * 0.6);
+    const halfWdata = (textWidthPx / 2) / pxPerDataX;
+
+    let leftHit = false;
+    let rightHit = false;
+    for (let j = 0; j < mz.length; j++) {
+      const mj = mz[j];
+      if (mj === m) continue;
+      if (Math.abs(mj - m) > halfWdata) continue;
+      if (intensity[j] < i - epsilon) continue;
+      if (mj < m) leftHit = true;
+      else rightHit = true;
+      if (leftHit && rightHit) break;
+    }
+
+    let chosenSide;
+    if (ann.xanchor === "left" || ann.xanchor === "right") {
+      chosenSide = ann.xanchor;
+    } else if (rightHit && !leftHit) {
+      chosenSide = "left";
+    } else if (leftHit && !rightHit) {
+      chosenSide = "right";
+    } else {
+      chosenSide = "right";
+    }
+
+    ann.xanchor = chosenSide;
+    ann.xshift = chosenSide === "left" ? 4 : -4;
+    ann.yanchor = "middle";
+    ann.yshift = 0;
+  }
+}
+
 function normalizeIntensities(intensity, doNormalize) {
   if (!doNormalize) return intensity.slice();
   const max = Math.max(...intensity);
@@ -548,6 +602,14 @@ function plot() {
   }
   const plotWidthPx = Math.max(50, chartPxWidth - (layout.margin.l || 0) - (layout.margin.r || 0));
 
+  let chartPxHeight;
+  if (previewAtExportSize && exportHeight > 0) {
+    chartPxHeight = exportHeight;
+  } else {
+    chartPxHeight = els.chart.clientHeight || els.chart.offsetHeight || 500;
+  }
+  const plotHeightPx = Math.max(50, chartPxHeight - (layout.margin.t || 0) - (layout.margin.b || 0));
+
   pruneSelection(selectedMz1, parsed.mz);
   if (compareEnabled) pruneSelection(selectedMz2, parsed2.mz);
   if (compareEnabled3) pruneSelection(selectedMz3, parsed3.mz);
@@ -642,6 +704,9 @@ function plot() {
     avoidStemCollisions(annos1, parsed.mz, intensity, xMin, xMax, plotWidthPx, fontSize);
     avoidStemCollisions(annos2, parsed2.mz, intensity2, xMin, xMax, plotWidthPx, fontSize);
     avoidStemCollisions(annos3, parsed3.mz, intensity3, xMin, xMax, plotWidthPx, fontSize);
+    avoidFrameLineCollisions(annos1, parsed.mz, intensity, xMin, xMax, plotWidthPx, yAxisTop, third * plotHeightPx, fontSize);
+    avoidFrameLineCollisions(annos2, parsed2.mz, intensity2, xMin, xMax, plotWidthPx, yAxisTop2, third * plotHeightPx, fontSize);
+    avoidFrameLineCollisions(annos3, parsed3.mz, intensity3, xMin, xMax, plotWidthPx, yAxisTop3, third * plotHeightPx, fontSize);
     annotations = annotations.concat(annos1, annos2, annos3);
   } else if (hasSecond) {
     const gapPct = Math.min(Math.max(parseFloat(els.gapInput.value) || 0, 0), 80);
@@ -705,6 +770,8 @@ function plot() {
     );
     avoidStemCollisions(annos1, parsed.mz, intensity, xMin, xMax, plotWidthPx, fontSize);
     avoidStemCollisions(annos2, parsed2.mz, intensity2, xMin, xMax, plotWidthPx, fontSize);
+    avoidFrameLineCollisions(annos1, parsed.mz, intensity, xMin, xMax, plotWidthPx, yAxisTop, half * plotHeightPx, fontSize);
+    avoidFrameLineCollisions(annos2, parsed2.mz, intensity2, xMin, xMax, plotWidthPx, yAxisTop2, half * plotHeightPx, fontSize);
     annotations = annotations.concat(annos1, annos2);
   } else {
     layout.xaxis = {
@@ -736,6 +803,7 @@ function plot() {
       buildManualAnnotations(parsed.mz, intensity, selectedMz1, autoSet1, decimals, fontSize, fontFamily, textColor, "x", "y")
     );
     avoidStemCollisions(annos1, parsed.mz, intensity, xMin, xMax, plotWidthPx, fontSize);
+    avoidFrameLineCollisions(annos1, parsed.mz, intensity, xMin, xMax, plotWidthPx, yAxisTop, plotHeightPx, fontSize);
     annotations = annotations.concat(annos1);
   }
 
