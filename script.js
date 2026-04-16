@@ -336,6 +336,50 @@ function buildManualAnnotations(mz, intensity, selectedSet, autoSet, decimals, f
     }));
 }
 
+function avoidStemCollisions(annotations, mz, intensity, xMin, xMax, plotWidthPx, fontSize) {
+  if (!annotations || !annotations.length) return;
+  if (!Number.isFinite(plotWidthPx) || plotWidthPx <= 0) return;
+  const xRange = xMax - xMin;
+  if (!Number.isFinite(xRange) || xRange <= 0) return;
+  const pxPerData = plotWidthPx / xRange;
+  const epsilon = 1e-9;
+
+  for (const ann of annotations) {
+    const m = ann.x;
+    const i = ann.y;
+    const text = String(ann.text == null ? "" : ann.text);
+    const textWidthPx = Math.max(1, text.length * fontSize * 0.6);
+    const halfWdata = (textWidthPx / 2) / pxPerData;
+
+    let leftHit = false;
+    let rightHit = false;
+    for (let j = 0; j < mz.length; j++) {
+      const mj = mz[j];
+      if (mj === m) continue;
+      if (Math.abs(mj - m) > halfWdata) continue;
+      if (intensity[j] < i - epsilon) continue;
+      if (mj < m) leftHit = true;
+      else rightHit = true;
+      if (leftHit && rightHit) break;
+    }
+
+    if (!leftHit && !rightHit) continue;
+    if (rightHit && !leftHit) {
+      ann.xanchor = "right";
+      ann.xshift = -4;
+      ann.yshift = 2;
+    } else if (leftHit && !rightHit) {
+      ann.xanchor = "left";
+      ann.xshift = 4;
+      ann.yshift = 2;
+    } else {
+      ann.xanchor = "left";
+      ann.xshift = 4;
+      ann.yshift = 2;
+    }
+  }
+}
+
 function normalizeIntensities(intensity, doNormalize) {
   if (!doNormalize) return intensity.slice();
   const max = Math.max(...intensity);
@@ -435,6 +479,17 @@ function plot() {
   const threshold = parseFloat(els.thresholdInput.value) || 0;
   const decimals = parseInt(els.decimalsInput.value, 10) || 0;
 
+  const exportWidth = parseInt(els.widthInput.value, 10);
+  const exportHeight = parseInt(els.heightInput.value, 10);
+  const previewAtExportSize = els.previewSizeInput.checked;
+  let chartPxWidth;
+  if (previewAtExportSize && exportWidth > 0) {
+    chartPxWidth = exportWidth;
+  } else {
+    chartPxWidth = els.chart.clientWidth || els.chart.offsetWidth || 700;
+  }
+  const plotWidthPx = Math.max(50, chartPxWidth - (layout.margin.l || 0) - (layout.margin.r || 0));
+
   pruneSelection(selectedMz1, parsed.mz);
   if (compareEnabled) pruneSelection(selectedMz2, parsed2.mz);
 
@@ -488,17 +543,25 @@ function plot() {
 
     const autoSet1 = new Set();
     const autoSet2 = new Set();
+    let annos1 = [];
+    let annos2 = [];
     if (els.labelInput.checked) {
       const a1 = buildAnnotations(parsed.mz, intensity, threshold, decimals, fontSize, fontFamily, textColor, "x2", "y2");
       const a2 = buildAnnotations(parsed2.mz, intensity2, threshold, decimals, fontSize, fontFamily, textColor, "x", "y");
       a1.forEach((a) => autoSet1.add(a.x));
       a2.forEach((a) => autoSet2.add(a.x));
-      annotations = annotations.concat(a1, a2);
+      annos1 = annos1.concat(a1);
+      annos2 = annos2.concat(a2);
     }
-    annotations = annotations.concat(
-      buildManualAnnotations(parsed.mz, intensity, selectedMz1, autoSet1, decimals, fontSize, fontFamily, textColor, "x2", "y2"),
+    annos1 = annos1.concat(
+      buildManualAnnotations(parsed.mz, intensity, selectedMz1, autoSet1, decimals, fontSize, fontFamily, textColor, "x2", "y2")
+    );
+    annos2 = annos2.concat(
       buildManualAnnotations(parsed2.mz, intensity2, selectedMz2, autoSet2, decimals, fontSize, fontFamily, textColor, "x", "y")
     );
+    avoidStemCollisions(annos1, parsed.mz, intensity, xMin, xMax, plotWidthPx, fontSize);
+    avoidStemCollisions(annos2, parsed2.mz, intensity2, xMin, xMax, plotWidthPx, fontSize);
+    annotations = annotations.concat(annos1, annos2);
   } else {
     layout.xaxis = {
       ...xAxisBase,
@@ -519,28 +582,28 @@ function plot() {
     traces = buildStemTraces(parsed.mz, intensity, color, "x", "y", showPeakMarkers);
 
     const autoSet1 = new Set();
+    let annos1 = [];
     if (els.labelInput.checked) {
       const a1 = buildAnnotations(parsed.mz, intensity, threshold, decimals, fontSize, fontFamily, textColor);
       a1.forEach((a) => autoSet1.add(a.x));
-      annotations = annotations.concat(a1);
+      annos1 = annos1.concat(a1);
     }
-    annotations = annotations.concat(
+    annos1 = annos1.concat(
       buildManualAnnotations(parsed.mz, intensity, selectedMz1, autoSet1, decimals, fontSize, fontFamily, textColor, "x", "y")
     );
+    avoidStemCollisions(annos1, parsed.mz, intensity, xMin, xMax, plotWidthPx, fontSize);
+    annotations = annotations.concat(annos1);
   }
 
   if (annotations.length) layout.annotations = annotations;
 
-  const width = parseInt(els.widthInput.value, 10);
-  const height = parseInt(els.heightInput.value, 10);
-  const previewAtExportSize = els.previewSizeInput.checked;
   const responsive = !previewAtExportSize;
 
-  if (previewAtExportSize && width > 0 && height > 0) {
-    layout.width = width;
-    layout.height = height;
-    els.chart.style.width = `${width}px`;
-    els.chart.style.height = `${height}px`;
+  if (previewAtExportSize && exportWidth > 0 && exportHeight > 0) {
+    layout.width = exportWidth;
+    layout.height = exportHeight;
+    els.chart.style.width = `${exportWidth}px`;
+    els.chart.style.height = `${exportHeight}px`;
     els.chart.style.maxWidth = "100%";
   } else {
     els.chart.style.width = "";
