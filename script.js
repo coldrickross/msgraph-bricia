@@ -337,6 +337,78 @@ function pruneSelection(set, mzArray) {
   }
 }
 
+function axisName(ref, kind) {
+  const base = kind === "x" ? "xaxis" : "yaxis";
+  const m = ref.match(/^[xy](\d+)$/);
+  return m ? `${base}${m[1]}` : base;
+}
+
+function resolveAnnotationOverlap(annotations, fullLayout, fontSize) {
+  if (!annotations.length || !fullLayout) return annotations;
+  const lineH = fontSize * 1.2;
+  const baseShift = 10;
+  const pad = 2;
+  const charW = fontSize * 0.6;
+
+  const groups = new Map();
+  annotations.forEach((ann, idx) => {
+    const xref = ann.xref || "x";
+    const yref = ann.yref || "y";
+    const key = `${xref}|${yref}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push({ ann, idx });
+  });
+
+  const resolved = annotations.map((a) => ({ ...a, yshift: baseShift }));
+
+  groups.forEach((entries, key) => {
+    const [xref, yref] = key.split("|");
+    const xAxis = fullLayout[axisName(xref, "x")];
+    const yAxis = fullLayout[axisName(yref, "y")];
+    if (!xAxis || !yAxis || !xAxis._length || !yAxis._length) return;
+    const xRange = xAxis.range;
+    const yRange = yAxis.range;
+    const xSpan = xRange[1] - xRange[0];
+    const ySpan = yRange[1] - yRange[0];
+    if (xSpan <= 0 || ySpan <= 0) return;
+    const pxPerX = xAxis._length / xSpan;
+    const pxPerY = yAxis._length / ySpan;
+
+    const sorted = entries.slice().sort((a, b) => a.ann.x - b.ann.x);
+    const placed = [];
+
+    sorted.forEach(({ ann, idx }) => {
+      const w = ann.text.length * charW + 2;
+      const xC = (ann.x - xRange[0]) * pxPerX;
+      const peakScreenY = yAxis._length - (ann.y - yRange[0]) * pxPerY;
+      let bottom = peakScreenY - baseShift;
+      let top = bottom - lineH;
+      const left = xC - w / 2;
+      const right = xC + w / 2;
+
+      let guard = 0;
+      while (guard++ < 40) {
+        let bumped = false;
+        for (const p of placed) {
+          if (p.right < left - pad || p.left > right + pad) continue;
+          if (p.bottom < top - pad || p.top > bottom + pad) continue;
+          const shift = bottom - p.top + pad;
+          top -= shift;
+          bottom -= shift;
+          bumped = true;
+          break;
+        }
+        if (!bumped) break;
+      }
+
+      placed.push({ left, right, top, bottom });
+      resolved[idx] = { ...ann, yshift: peakScreenY - bottom };
+    });
+  });
+
+  return resolved;
+}
+
 function normalizeIntensities(intensity, doNormalize) {
   if (!doNormalize) return intensity.slice();
   const max = Math.max(...intensity);
@@ -550,6 +622,10 @@ function plot() {
   }
 
   Plotly.react(els.chart, traces, layout, { responsive, displaylogo: false });
+  if (annotations.length && els.chart._fullLayout) {
+    const resolved = resolveAnnotationOverlap(annotations, els.chart._fullLayout, fontSize);
+    Plotly.relayout(els.chart, { annotations: resolved });
+  }
   attachZoomClamp();
   attachPeakClick();
 
