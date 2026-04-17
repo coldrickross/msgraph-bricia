@@ -11,6 +11,7 @@ const els = {
   gridColorInput: document.getElementById("gridcolor-input"),
   fontFamilyInput: document.getElementById("font-family-input"),
   fontSizeInput: document.getElementById("font-size-input"),
+  yLabelOffsetInput: document.getElementById("ylabel-offset-input"),
   gridInput: document.getElementById("grid-input"),
   normalizeInput: document.getElementById("normalize-input"),
   labelInput: document.getElementById("label-input"),
@@ -95,6 +96,7 @@ const TRANSLATIONS = {
     gridColor: "Cor da grade",
     fontFamily: "Fonte",
     fontSize: "Tamanho da fonte (px)",
+    yLabelOffset: "Afastamento do rótulo Y (px)",
     showGrid: "Mostrar grade",
     showPeakMarkers: "Mostrar bolinha na ponta do pico",
     normalize: "Normalizar para pico base (100%)",
@@ -168,6 +170,7 @@ const TRANSLATIONS = {
     gridColor: "Grid color",
     fontFamily: "Font",
     fontSize: "Font size (px)",
+    yLabelOffset: "Y label offset (px)",
     showGrid: "Show grid",
     showPeakMarkers: "Show dot at peak tip",
     normalize: "Normalize to base peak (100%)",
@@ -285,7 +288,7 @@ function parseData(text) {
   return { mz, intensity, errors };
 }
 
-function makeSharedYLabel(text, fontSize, fontFamily, textColor, margin) {
+function makeSharedYLabel(text, fontSize, fontFamily, textColor, margin, extraOffset = 0) {
   const leftMargin = (margin && margin.l) || 70;
   return {
     text,
@@ -295,7 +298,7 @@ function makeSharedYLabel(text, fontSize, fontFamily, textColor, margin) {
     y: 0.5,
     xanchor: "center",
     yanchor: "middle",
-    xshift: -leftMargin * 0.6,
+    xshift: -leftMargin * 0.6 - extraOffset,
     textangle: -90,
     showarrow: false,
     font: { size: fontSize, family: fontFamily, color: textColor },
@@ -516,6 +519,7 @@ function plot() {
   const gridColor = els.gridColorInput.value;
   const fontFamily = els.fontFamilyInput.value;
   const fontSize = parseInt(els.fontSizeInput.value, 10) || 14;
+  const yLabelOffset = Math.max(parseFloat(els.yLabelOffsetInput.value) || 0, 0);
   const showGrid = els.gridInput.checked;
   const showPeakMarkers = els.peakMarkerInput.checked;
 
@@ -580,7 +584,7 @@ function plot() {
       font: { size: Math.round(fontSize * 1.3), family: fontFamily, color: textColor },
     },
     font: { family: fontFamily, size: fontSize, color: textColor },
-    margin: { l: 70, r: 30, t: 60, b: 60 },
+    margin: { l: 70 + yLabelOffset, r: 30, t: 60, b: 60 },
     plot_bgcolor: bgColor,
     paper_bgcolor: bgColor,
     hovermode: "closest",
@@ -668,7 +672,7 @@ function plot() {
       anchor: "x3",
       range: [0, yAxisTop],
     };
-    annotations.push(makeSharedYLabel(yLabelText, fontSize, fontFamily, textColor, layout.margin));
+    annotations.push(makeSharedYLabel(yLabelText, fontSize, fontFamily, textColor, layout.margin, yLabelOffset));
 
     const topTraces = buildStemTraces(parsed.mz, intensity, color, "x3", "y3", showPeakMarkers);
     const middleTraces = buildStemTraces(parsed2.mz, intensity2, color2, "x2", "y2", showPeakMarkers);
@@ -744,7 +748,7 @@ function plot() {
       anchor: "x2",
       range: [0, yAxisTop],
     };
-    annotations.push(makeSharedYLabel(yLabelText, fontSize, fontFamily, textColor, layout.margin));
+    annotations.push(makeSharedYLabel(yLabelText, fontSize, fontFamily, textColor, layout.margin, yLabelOffset));
 
     const topTraces = buildStemTraces(parsed.mz, intensity, color, "x2", "y2", showPeakMarkers);
     const bottomTraces = buildStemTraces(parsed2.mz, intensity2, color2, "x", "y", showPeakMarkers);
@@ -787,6 +791,7 @@ function plot() {
       title: {
         text: yLabelText,
         font: { size: fontSize, family: fontFamily, color: textColor },
+        standoff: yLabelOffset,
       },
     };
 
@@ -1058,6 +1063,7 @@ els.previewSizeInput.addEventListener("change", replotIfReady);
   els.gridColorInput,
   els.fontFamilyInput,
   els.fontSizeInput,
+  els.yLabelOffsetInput,
   els.gridInput,
   els.xMinInput,
   els.xMaxInput,
